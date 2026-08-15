@@ -19,24 +19,35 @@ O corte é automático (`GS V 49`): o papel avança até a guilhotina e corta so
 ## Como usar (API)
 
 ```bash
+# documentação viva (endpoints, alinhamentos, fontes, preenchimento)
+curl http://<host>:8000/
+
 # health check
 curl http://<host>:8000/health
 
 # cupom de teste
 curl -X POST http://<host>:8000/test
 
-# cupom personalizado
+# cupom personalizado (alinhamento, fonte e padrão de preenchimento por linha)
 curl -X POST http://<host>:8000/print \
   -H 'Content-Type: application/json' \
   -d '{
     "titulo": "PEDIDO #123",
     "linhas": [
+      {"texto": "-X-", "alinhamento": "esquerda", "padrao": true},
       {"texto": "1x Hamburguer", "alinhamento": "esquerda"},
-      {"texto": "2x Refrigerante", "alinhamento": "esquerda"},
-      {"texto": "TOTAL: R$ 45,00", "alinhamento": "direita"}
+      {"texto": "TOTAL: R$ 45,00", "alinhamento": "direita", "fonte": "larga", "negrito": true},
+      {"texto": "-X-", "alinhamento": "esquerda", "padrao": true}
     ]
   }'
 ```
+
+**Campos por linha:**
+- `texto` — até 48 caracteres (24 na fonte larga)
+- `alinhamento` — `esquerda` | `centro` | `direita`
+- `fonte` — `normal` | `larga` (largura 2x, bom para títulos/totais)
+- `negrito` — `true`/`false`
+- `padrao` — `true` repete o `texto` até preencher a linha (ex: `"-X"` vira `-X-X-X-X-...`)
 
 ## Instalação na VM/LXC
 
@@ -59,7 +70,12 @@ Cria venv, instala o serviço systemd (`elgin-print-api`) e sobe a API na porta 
 
 - **NUL em bash**: variáveis bash truncam `\x00` — os comandos ESC/POS com NUL devem ser
   guardados como texto de escapes e enviados com `printf '%b'`.
-- **Corte**: `GS V 66` exige um byte `n` extra; `GS V 49` avança e corta sozinho.
+- **Corte**: a i9 executa o `GS V` imediatamente ao receber (fura o buffer) e a guilhotina
+  fica ~2 linhas acima da cabeça. O corte correto é **`ESC d 3` (rola) + `GS V 0` (corta)**
+  num write separado, depois de um delay proporcional ao cupom (~0.2s/linha).
+- **Linhas vazias**: a i9 não avança o papel em linhas 100% vazias — mandar um espaço `" "`.
+- **Espaço no topo**: ~2-3 linhas de papel em branco no início de cada cupom é físico
+  (distância guilhotina→cabeça da i9), não dá para remover por software.
 - **Área de impressão**: 72mm fixos (576 dots) = 48 colunas na Fonte A. `GS W` não aumenta.
 - **Udev**: o node `lp0` é da subsystem `usbmisc` (não `usb`) — regra udev precisa disso.
 - **LXC vs VM**: em LXC unprivileged o seccomp bloqueia `mknod`/`mount` (USB = config manual
