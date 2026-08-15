@@ -4,6 +4,7 @@ Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB)
 
 - **CLI**: `imprimir_elgin.sh` — imprime cupons direto no `/dev/usb/lp0`
 - **API REST**: `api/main.py` (FastAPI) — imprime pela rede, sem precisar acessar a máquina
+- **📚 Documentação técnica completa**: [`docs/impressora-elgin-i9.md`](docs/impressora-elgin-i9.md) — comandos ESC/POS, a saga do corte (comportamento de cada `GS V`), feed físico, DIP switches, beep e pitfalls
 
 ## Como usar (CLI)
 
@@ -70,12 +71,13 @@ Cria venv, instala o serviço systemd (`elgin-print-api`) e sobe a API na porta 
 
 - **NUL em bash**: variáveis bash truncam `\x00` — os comandos ESC/POS com NUL devem ser
   guardados como texto de escapes e enviados com `printf '%b'`.
-- **Corte**: a i9 executa o `GS V` imediatamente ao receber (fura o buffer) e a guilhotina
-  fica ~2 linhas acima da cabeça. O corte correto é **`ESC d 3` (rola) + `GS V 0` (corta)**
-  num write separado, depois de um delay proporcional ao cupom (~0.2s/linha).
-- **Linhas vazias**: a i9 não avança o papel em linhas 100% vazias — mandar um espaço `" "`.
-- **Espaço no topo**: ~2-3 linhas de papel em branco no início de cada cupom é físico
-  (distância guilhotina→cabeça da i9), não dá para remover por software.
+- **Corte**: o comando correto é **`GS V 66 0`** (`1d 56 42 00`), que corta rente à última
+  linha sem perder conteúdo. A i9 executa o `GS V` imediatamente ao receber (fura o buffer),
+  então o corte vai num write separado, depois de um delay proporcional ao cupom (~0.2s/linha).
+  Os demais comandos (`GS V 0/1/49`) cortam ~2 linhas antes e misturam conteúdo entre cupons.
+- **Feed no topo**: ~2-3 linhas de papel em branco no início de cada cupom é FÍSICO
+  (distância guilhotina→cabeça da i9), não dá para remover por software. Detalhes em
+  `docs/impressora-elgin-i9.md`.
 - **Área de impressão**: 72mm fixos (576 dots) = 48 colunas na Fonte A. `GS W` não aumenta.
 - **Udev**: o node `lp0` é da subsystem `usbmisc` (não `usb`) — regra udev precisa disso.
 - **LXC vs VM**: em LXC unprivileged o seccomp bloqueia `mknod`/`mount` (USB = config manual
