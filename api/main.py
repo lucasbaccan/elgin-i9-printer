@@ -37,7 +37,7 @@ ALINH = {                   # ESC a n
     "centro": ESC + b"a\x01",
     "direita": ESC + b"a\x02",
 }
-CORTE = b"\x1b\x64\x03\x1d\x56\x00"  # ESC d 3 (rola 3 linhas; sobra ~1 de margem no final) + GS V 0 (corta)
+CORTE = b"\x1d\x56\x42\x00"  # GS V 66 n=0 - completa ate a posicao de corte + corta (corta rente ao texto)
 MOLDURA = b"=" * LARGURA_NORMAL
 
 
