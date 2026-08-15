@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elgin I9 · Impressora Térmica</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --border: #e1e4e8;
+    --text: #1f2328;
+    --muted: #6a737d;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #dc2626;
+    --paper: #fdfbf7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .status { margin-left: auto; font-size: 13px; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+  .status.ok { background: #dcfce7; color: #166534; }
+  .status.bad { background: #fee2e2; color: #991b1b; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 15px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  button:hover { background: #f0f2f5; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: var(--accent-hover); }
+  button.danger { background: #fff; border-color: var(--danger); color: var(--danger); }
+  button.danger:hover { background: #fef2f2; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 3px; }
+  input[type=text], select {
+    font: inherit;
+    padding: 7px 9px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    width: 100%;
+  }
+  .field { margin-bottom: 12px; }
+  .line-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 100px auto auto auto;
+    gap: 8px;
+    align-items: end;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #fafbfc;
+  }
+  @media (max-width: 700px) {
+    .line-row { grid-template-columns: 1fr 1fr; }
+  }
+  .chk { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+  .chk input { margin: 0; }
+  .line-row .rm { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 6px; }
+  .line-row .rm:hover { color: var(--danger); }
+  .preview {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.35;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 12px;
+    white-space: pre;
+    overflow-x: auto;
+    min-height: 220px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.04);
+  }
+  .preview .title { font-weight: 700; }
+  .preview .bold { font-weight: 700; }
+  .preview .large { letter-spacing: .5px; }
+  pre.code {
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  pre.code .k { color: #79c0ff; }
+  pre.code .s { color: #a5d6ff; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #111827; color: #fff; padding: 12px 18px;
+    border-radius: 8px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    opacity: 0; transform: translateY(10px); transition: .25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: var(--danger); }
+  .layout-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .inline { display: flex; gap: 8px; align-items: center; }
+  .inline input { width: 70px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🖨️ Elgin I9</h1>
+  <span class="sub">Editor de cupom · ESC/POS via USB</span>
+  <span class="status bad" id="status">verificando…</span>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="actions">
+      <button class="primary" onclick="doPrint()">🖨️ Imprimir</button>
+      <button onclick="doTest()">🧪 Cupom de teste</button>
+      <span class="inline">
+        <button onclick="doFeed()">📄 Feed</button>
+        <input type="number" id="feedN" value="3" min="1" max="255" title="N linhas">
+      </span>
+      <button onclick="doCut()">✂️ Corte</button>
+    </div>
+
+    <div class="layout-btns">
+      <span class="sub" style="margin-right:4px">Layouts:</span>
+      <button onclick="applyLayout('teste')">Teste</button>
+      <button onclick="applyLayout('pedido')">Pedido</button>
+      <button onclick="applyLayout('etiqueta')">Etiqueta</button>
+      <button onclick="applyLayout('moldura')">Moldura</button>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="field">
+          <label>Título (opcional, largura 2x)</label>
+          <input type="text" id="titulo" maxlength="24" placeholder="PEDIDO #123"
+                 oninput="state.titulo=this.value; render()">
+        </div>
+
+        <label style="margin-bottom:6px">Linhas do cupom</label>
+        <div id="lines"></div>
+        <button onclick="addLine()" style="width:100%">+ Adicionar linha</button>
+      </div>
+
+      <div>
+        <label style="margin-bottom:6px">Pré-visualização (48 colunas)</label>
+        <div class="preview" id="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Construtor de chamadas da API</h2>
+    <p class="hint" style="margin-top:0">Conforme você monta o cupom, o JSON e o <code>curl</code> equivalentes são gerados aqui. O endpoint <code>POST /print</code> espera exatamente este corpo.</p>
+    <pre class="code" id="api-json"></pre>
+    <pre class="code" id="api-curl" style="margin-top:10px"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = { titulo: '', linhas: [] };
+
+const LAYOUTS = {
+  teste: {
+    titulo: '*** MENSAGEM SECRETA ***',
+    linhas: [
+      { texto: 'CLASSIFICACAO: ULTRA SECRETA', alinhamento: 'esquerda' },
+      { texto: 'DESTINATARIO: SO VOCE', alinhamento: 'esquerda' },
+      { texto: '' },
+      { texto: 'PSST... NAO CONTA PRA NINGUEM:', alinhamento: 'centro' },
+      { texto: '' },
+      { texto: 'O HERMES ACHA QUE VOCE E O', alinhamento: 'centro' },
+      { texto: 'MELHOR CHEFE DO UNIVERSO!', alinhamento: 'centro' },
+      { texto: '' },
+      { texto: 'SO QUE NAO, EU NAO DISSE NADA.', alinhamento: 'direita' },
+      { texto: 'ASSINADO: HERMES, O MORDOMO', alinhamento: 'direita' },
+      { texto: '-X-', alinhamento: 'esquerda', padrao: true }
+    ]
+  },
+  pedido: {
+    titulo: 'PEDIDO #123',
+    linhas: [
+      { texto: '-X-', alinhamento: 'esquerda', padrao: true },
+      { texto: '1x Hamburguer', alinhamento: 'esquerda' },
+      { texto: '2x Refrigerante', alinhamento: 'esquerda' },
+      { texto: '1x Batata Frita', alinhamento: 'esquerda' },
+      { texto: '' },
+      { texto: 'TOTAL: R$ 45,00', alinhamento: 'direita', fonte: 'larga', negrito: true },
+      { texto: '-X-', alinhamento: 'esquerda', padrao: true }
+    ]
+  },
+  etiqueta: {
+    titulo: 'ETIQUETA',
+    linhas: [
+      { texto: 'Destino: Mesa 7', alinhamento: 'esquerda' },
+      { texto: 'Conteudo: FRAGIL', alinhamento: 'esquerda', negrito: true },
+      { texto: '' },
+      { texto: 'Prioridade: ALTA', alinhamento: 'centro' },
+      { texto: '-', alinhamento: 'esquerda', padrao: true }
+    ]
+  },
+  moldura: {
+    titulo: '',
+    linhas: [
+      { texto: '*', alinhamento: 'esquerda', padrao: true },
+      { texto: 'MENSAGEM', alinhamento: 'centro' },
+      { texto: 'COM MOLDURA', alinhamento: 'centro' },
+      { texto: '*', alinhamento: 'esquerda', padrao: true }
+    ]
+  }
+};
+
+function fill(pattern, width) {
+  if (!pattern) return '';
+  let out = '';
+  while (out.length < width) out += pattern;
+  return out.slice(0, width);
+}
+
+function padTo(text, width, align) {
+  const diff = width - text.length;
+  if (diff <= 0) return text;
+  if (align === 'direita') return ' '.repeat(diff) + text;
+  if (align === 'centro') {
+    const left = Math.floor(diff / 2);
+    return ' '.repeat(left) + text + ' '.repeat(diff - left);
+  }
+  return text + ' '.repeat(diff);
+}
+
+function lineRender(l) {
+  const limit = l.fonte === 'larga' ? 24 : 48;
+  let text = l.padrao ? fill(l.texto, limit) : l.texto.slice(0, limit);
+  if (!text.trim()) text = ' ';
+  return padTo(text, 48, l.alinhamento);
+}
+
+function renderPreview() {
+  const M = '='.repeat(48);
+  const out = [];
+  out.push('<span class="bold">' + M + '</span>');
+  if (state.titulo) {
+    out.push('<span class="title large">' + padTo(state.titulo.slice(0, 24), 48, 'centro') + '</span>');
+  }
+  for (const l of state.linhas) {
+    let cls = '';
+    if (l.negrito) cls += ' bold';
+    if (l.fonte === 'larga') cls += ' large';
+    out.push('<span class="' + cls.trim() + '">' + lineRender(l) + '</span>');
+  }
+  out.push('<span class="bold">' + M + '</span>');
+  document.getElementById('preview').innerHTML = out.join('\n');
+}
+
+function lineEscape(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderLines() {
+  const box = document.getElementById('lines');
+  box.innerHTML = '';
+  state.linhas.forEach((l, i) => {
+    const row = document.createElement('div');
+    row.className = 'line-row';
+    row.innerHTML =
+      '<input type="text" value="' + lineEscape(l.texto) + '" maxlength="48" placeholder="texto" ' +
+        'oninput="state.linhas[' + i + '].texto=this.value; render()">' +
+      '<select onchange="state.linhas[' + i + '].alinhamento=this.value; render()">' +
+        opt('esquerda', l.alinhamento) + opt('centro', l.alinhamento) + opt('direita', l.alinhamento) +
+      '</select>' +
+      '<select onchange="state.linhas[' + i + '].fonte=this.value; render()">' +
+        opt('normal', l.fonte) + opt('larga', l.fonte) +
+      '</select>' +
+      '<label class="chk"><input type="checkbox" ' + (l.negrito ? 'checked' : '') +
+        ' onchange="state.linhas[' + i + '].negrito=this.checked; render()"> negrito</label>' +
+      '<label class="chk"><input type="checkbox" ' + (l.padrao ? 'checked' : '') +
+        ' onchange="state.linhas[' + i + '].padrao=this.checked; render()"> padrão</label>' +
+      '<button class="rm" title="remover" onclick="removeLine(' + i + ')">✕</button>';
+    box.appendChild(row);
+  });
+}
+
+function opt(val, sel) {
+  return '<option value="' + val + '"' + (val === sel ? ' selected' : '') + '>' + val + '</option>';
+}
+
+function renderApi() {
+  const payload = {};
+  if (state.titulo) payload.titulo = state.titulo;
+  payload.linhas = state.linhas.map(l => {
+    const o = { texto: l.texto };
+    if (l.alinhamento !== 'centro') o.alinhamento = l.alinhamento;
+    if (l.fonte !== 'normal') o.fonte = l.fonte;
+    if (l.negrito) o.negrito = true;
+    if (l.padrao) o.padrao = true;
+    return o;
+  });
+  const json = JSON.stringify(payload, null, 2);
+  document.getElementById('api-json').textContent = json;
+
+  const base = window.location.origin;
+  const single = JSON.stringify(payload).replace(/'/g, "'\\''");
+  const curl = "curl -X POST " + base + "/print \\\n" +
+               "  -H 'Content-Type: application/json' \\\n" +
+               "  -d '" + single + "'";
+  document.getElementById('api-curl').textContent = curl;
+}
+
+function render() { renderLines(); renderPreview(); renderApi(); }
+
+function addLine() {
+  state.linhas.push({ texto: '', alinhamento: 'centro', fonte: 'normal', negrito: false, padrao: false });
+  render();
+}
+function removeLine(i) { state.linhas.splice(i, 1); render(); }
+
+function applyLayout(name) {
+  const l = LAYOUTS[name];
+  state.titulo = l.titulo;
+  state.linhas = l.linhas.map(x => ({
+    texto: x.texto || '', alinhamento: x.alinhamento || 'centro',
+    fonte: x.fonte || 'normal', negrito: !!x.negrito, padrao: !!x.padrao
+  }));
+  document.getElementById('titulo').value = state.titulo;
+  render();
+  toast('Layout "' + name + '" aplicado');
+}
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+async function post(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+  return data;
+}
+
+async function doPrint() {
+  if (!state.titulo && state.linhas.length === 0) { toast('Adicione um título ou linhas', true); return; }
+  const payload = { linhas: state.linhas };
+  if (state.titulo) payload.titulo = state.titulo;
+  try { await post('/print', payload); toast('Cupom impresso! ✨'); }
+  catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+async function doTest() {
+  try { await post('/test'); toast('Cupom de teste impresso!'); }
+  catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+async function doFeed() {
+  const n = parseInt(document.getElementById('feedN').value, 10) || 3;
+  try { await post('/feed', { linhas: n }); toast('Feed de ' + n + ' linha(s)'); }
+  catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+async function doCut() {
+  try { await post('/cut'); toast('Corte acionado ✂️'); }
+  catch (e) { toast('Erro: ' + e.message, true); }
+}
+
+async function checkHealth() {
+  try {
+    const res = await fetch('/health');
+    const d = await res.json();
+    const el = document.getElementById('status');
+    if (d.ok) { el.textContent = '● impressora pronta'; el.className = 'status ok'; }
+    else { el.textContent = '● impressora indisponível'; el.className = 'status bad'; }
+  } catch (e) {
+    const el = document.getElementById('status');
+    el.textContent = '● sem conexão';
+    el.className = 'status bad';
+  }
+}
+
+addLine();
+render();
+checkHealth();
+setInterval(checkHealth, 5000);
+</script>
+</body>
+</html>

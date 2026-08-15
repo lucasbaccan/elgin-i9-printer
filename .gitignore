@@ -1,8 +1,16 @@
+# Go
+elgin-print
+*.test
+*.out
+
+# Python (legado, mantido por segurança)
 __pycache__/
 *.pyc
 venv/
 .venv/
-.env
 *.egg-info/
+
+# Ambiente / builds
+.env
 dist/
 build/
