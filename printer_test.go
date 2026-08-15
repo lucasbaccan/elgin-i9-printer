@@ -64,8 +64,10 @@ func TestMontarCupomPadraoPreenche48(t *testing.T) {
 
 func TestMontarCupomNegrito(t *testing.T) {
 	out := montarCupom("", []Linha{{Texto: "NEGRITO", Alinhamento: "centro", Negrito: true}})
-	if !bytes.Contains(out, append(append([]byte{}, boldOn...), []byte("NEGRITO")...)) {
-		t.Fatal("negrito deveria ligar antes do texto")
+	// Ordem real (igual ao Python): negrito liga -> alinhamento -> texto.
+	seq := append(append(append([]byte{}, boldOn...), alignCenter...), []byte("NEGRITO")...)
+	if !bytes.Contains(out, seq) {
+		t.Fatalf("negrito deveria ligar antes do alinhamento+texto; saída: %q", out)
 	}
 	if !bytes.Contains(out, boldOff) {
 		t.Fatal("negrito deveria desligar após o texto")
