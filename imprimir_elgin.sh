@@ -20,7 +20,7 @@ LARG1='\x1d\x21\x00'        # GS ! 0 - largura normal
 ESQ='\x1b\x61\x00'          # ESC a NUL - alinhamento esquerda
 CEN='\x1b\x61\x01'          # ESC a 1 - alinhamento centro
 DIR='\x1b\x61\x02'          # ESC a 2 - alinhamento direita
-CORTE='\x1d\x56\x31'        # GS V 49 - avanca ate o corte + corte automatico
+CORTE=$'\x1b\x64\x03\x1d\x56\x00'  # ESC d 3 (rola p/ passar da guilhotina) + GS V 0 (corta)
 MOLDURA='================================================'  # 48x (largura cheia)
 
 # --- envia bytes para a impressora (%b interpreta \n, \x1b, \x00, etc.) ---
