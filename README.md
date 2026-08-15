@@ -1,21 +1,39 @@
 # Elgin I9 Printer 🖨️
 
-Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB) do homelab.
+Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB) do homelab — agora num **único binário Go estático**.
 
-- **CLI**: `imprimir_elgin.sh` — imprime cupons direto no `/dev/usb/lp0`
-- **API REST**: `api/main.py` (FastAPI) — imprime pela rede, sem precisar acessar a máquina
-- **📚 Documentação técnica completa**: [`docs/impressora-elgin-i9.md`](docs/impressora-elgin-i9.md) — comandos ESC/POS, a saga do corte (comportamento de cada `GS V`), feed físico, DIP switches, beep e pitfalls
+- **Binário `elgin-print`**: substitui a antiga CLI bash + API FastAPI (um arquivo, zero dependências no destino).
+- **CLI**: subcomandos `print`, `serve`, `feed`, `cut`.
+- **API REST**: mantém os endpoints antigos (`GET /`, `GET /health`, `POST /test`, `POST /print`) + novos (`POST /feed`, `POST /cut`).
+- **Web UI**: editor visual de cupom embutido no binário (`embed.FS`), em `http://<vm>:8000/`.
+- **📚 Documentação técnica completa**: [`docs/impressora-elgin-i9.md`](docs/impressora-elgin-i9.md) — comandos ESC/POS, a saga do corte, feed físico, DIP switches, beep e pitfalls.
+
+## Compilando
+
+```bash
+make cross     # binário estático linux/amd64 (roda em Alpine/musl, ~5MB)
+```
+
+Ou manualmente:
+
+```bash
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o elgin-print .
+```
+
+Há um CI (`.github/workflows/build.yml`) que roda `go vet`, `go test` e gera o binário a cada push/PR.
 
 ## Como usar (CLI)
 
 ```bash
-./imprimir_elgin.sh                       # cupom de teste completo
-./imprimir_elgin.sh "texto"               # mensagem centralizada + moldura + corte
-./imprimir_elgin.sh -e "esq" -c "centro" -d "dir"   # multilinha com alinhamentos
-./imprimir_elgin.sh -t "Título" -c "texto"           # título 2x + corpo
+./elgin-print print                        # cupom de teste completo
+./elgin-print print "texto"                # mensagem centralizada + moldura + corte
+./elgin-print print -e "esq" -c "centro" -d "dir"   # multilinha com alinhamentos
+./elgin-print print -t "Título" -c "texto"          # título 2x + corpo
+./elgin-print feed 5                       # avança 5 linhas
+./elgin-print cut                          # aciona a guilhotina
 ```
 
-O corte é automático (`GS V 49`): o papel avança até a guilhotina e corta sozinho. ✂️
+O corte é automático (`GS V 66 0`), enviado em write separado com delay para não furar o buffer. ✂️
 
 ## Como usar (API)
 
@@ -23,13 +41,17 @@ O corte é automático (`GS V 49`): o papel avança até a guilhotina e corta so
 # documentação viva (endpoints, alinhamentos, fontes, preenchimento)
 curl http://<host>:8000/
 
-# health check
+# health check (reflete presença/ausência real da impressora)
 curl http://<host>:8000/health
 
 # cupom de teste
 curl -X POST http://<host>:8000/test
 
-# cupom personalizado (alinhamento, fonte e padrão de preenchimento por linha)
+# avançar papel / cortar
+curl -X POST http://<host>:8000/feed -H 'Content-Type: application/json' -d '{"linhas": 5}'
+curl -X POST http://<host>:8000/cut
+
+# cupom personalizado (alinhamento, fonte, negrito e padrão por linha)
 curl -X POST http://<host>:8000/print \
   -H 'Content-Type: application/json' \
   -d '{
@@ -43,20 +65,38 @@ curl -X POST http://<host>:8000/print \
   }'
 ```
 
+> **Nota:** `GET /` serve a **Web UI** quando acessado por navegador (`Accept: text/html`)
+> e a **documentação JSON** quando acessado por `curl`/API (`Accept: */*`) — preservando
+> o comportamento antigo sem quebrar a UI no navegador.
+
 **Campos por linha:**
+
 - `texto` — até 48 caracteres (24 na fonte larga)
 - `alinhamento` — `esquerda` | `centro` | `direita`
 - `fonte` — `normal` | `larga` (largura 2x, bom para títulos/totais)
 - `negrito` — `true`/`false`
 - `padrao` — `true` repete o `texto` até preencher a linha (ex: `"-X"` vira `-X-X-X-X-...`)
 
-## Instalação na VM/LXC
+## Web UI
+
+Abra `http://<vm>:8000/` no navegador. Oferece:
+
+- **Editor de cupom** (título + linhas com alinhamento/fonte/negrito/padrão) e pré-visualização 48 colunas.
+- Botões **Imprimir** / **Feed N linhas** / **Corte** / **Cupom de teste**.
+- **Layouts prontos** (teste, pedido, etiqueta, moldura).
+- **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
+
+## Instalação na VM (Alpine)
+
+A instalação é **copiar 1 binário + habilitar 1 serviço** (sem Python/venv/pip):
 
 ```bash
-sudo ./deploy/setup_vm.sh
+sudo ./deploy/setup.sh ./elgin-print
 ```
 
-Cria venv, instala o serviço systemd (`elgin-print-api`) e sobe a API na porta 8000.
+O `setup.sh` detecta o init system: **OpenRC** (Alpine) → `/etc/init.d/elgin-print`, ou **systemd** → `/etc/systemd/system/elgin-print.service`. Também instala a regra udev `50-elgin-i9.rules`.
+
+Guia completo para criar a VM no Proxmox (com USB passthrough nativo e auto-reconexão): [`deploy/alpine-vm.md`](deploy/alpine-vm.md).
 
 ## 📥 Downloads (manuais e drivers)
 
@@ -84,6 +124,7 @@ Arquivos incluídos neste repositório:
 
 - [x] Script CLI de impressão (corte, alinhamento, fontes)
 - [x] API REST básica (FastAPI)
+- [x] Binário Go único (CLI + API + Web UI) — substitui bash + FastAPI
 - [ ] VM dedicada com USB passthrough nativo (sem restart ao religar a impressora)
 - [ ] Autenticação na API (token)
 - [ ] Testes automatizados + CI
@@ -92,14 +133,18 @@ Arquivos incluídos neste repositório:
 ## Notas técnicas (pitfalls)
 
 - **NUL em bash**: variáveis bash truncam `\x00` — os comandos ESC/POS com NUL devem ser
-  guardados como texto de escapes e enviados com `printf '%b'`.
+  guardados como texto de escapes e enviados com `printf '%b'`. **No Go isso não existe**
+  (bytes crus `[]byte`), o que simplifica o port.
 - **Corte**: o comando correto é **`GS V 66 0`** (`1d 56 42 00`), que corta rente à última
   linha sem perder conteúdo. A i9 executa o `GS V` imediatamente ao receber (fura o buffer),
-  então o corte vai num write separado, depois de um delay proporcional ao cupom (~0.2s/linha).
-  Os demais comandos (`GS V 0/1/49`) cortam ~2 linhas antes e misturam conteúdo entre cupons.
+  então o corte vai num write separado, depois de um delay proporcional ao cupom
+  (`max(1.5s, linhas * 0.2s)`). Os demais comandos (`GS V 0/1/49`) cortam ~2 linhas antes e
+  misturam conteúdo entre cupons.
 - **Feed no topo**: ~2-3 linhas de papel em branco no início de cada cupom é FÍSICO
   (distância guilhotina→cabeça da i9), não dá para remover por software. Detalhes em
   `docs/impressora-elgin-i9.md`.
+- **Linhas vazias colapsam**: a i9 não avança papel em linha 100% vazia — o código envia um
+  espaço invisível (`" "`) para forçar o avanço.
 - **Área de impressão**: 72mm fixos (576 dots) = 48 colunas na Fonte A. `GS W` não aumenta.
 - **Udev**: o node `lp0` é da subsystem `usbmisc` (não `usb`) — regra udev precisa disso.
 - **LXC vs VM**: em LXC unprivileged o seccomp bloqueia `mknod`/`mount` (USB = config manual

@@ -146,6 +146,36 @@ Tabela B: 1-Claro=ON-ON · 2=OFF-OFF · 3=ON-OFF · 4-Escuro=OFF-ON
 - **Linhas vazias**: usar `" "` em vez de `""`.
 - **Espaço no topo**: físico, aceitar.
 
+## Implementação atual (binário Go)
+
+A impressão agora é feita por um **binário Go estático único** (`elgin-print`), que
+substituiu a CLI bash + API FastAPI. Subcomandos: `print`, `serve` (API + Web UI),
+`feed`, `cut`. Web UI embutida via `embed.FS` em `http://<vm>:8000/`.
+
+- **Por que Go**: bytes crus `[]byte` nativos — sem o problema do NUL do bash, sem
+  Python/venv/pip no destino, deploy = copiar 1 binário + 1 serviço.
+- **Port dos quirks**: todos os comportamentos desta página (corte `GS V 66 0` em write
+  separado com delay, linha vazia → `" "`, moldura 48 colunas, título 2x, `ESC @` no início)
+  estão portados em `montarCupom`/`enviar` no código Go — nada foi redescoberto.
+- **Endpoints**: `GET /` (Web UI no navegador / docs JSON via curl), `GET /health`,
+  `POST /test`, `POST /print`, `POST /feed`, `POST /cut`. JSON compatível com a API antiga
+  (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, padrao}]`).
+- **Env**: `ELGIN_LP` (default `/dev/usb/lp0`), `ELGIN_API_PORT` (default `8000`).
+- **Deploy**: `deploy/setup.sh` (OpenRC no Alpine, systemd nos demais) + regra udev
+  `deploy/50-elgin-i9.rules`. Guia da VM: `deploy/alpine-vm.md`.
+
 ## Recomendação de arquitetura
 
 **VM em vez de LXC**: o USB passthrough em VM é nativo (`usb0: host=20d1:7008`), o udev funciona, e religar a impressora não derruba nada. No LXC, religar a impressora exige reiniciar o container (o `/dev/usb` "deleted").
+
+### Auto-reconexão em VM
+
+Desligar/religar a impressora volta sozinho em três camadas, sem daemon extra:
+
+1. **QEMU usb-host** re-apega o device automaticamente (passthrough nativo de VM).
+2. **udev** reaplica `MODE=0666` no `/dev/usb/lp0` assim que o node é recriado.
+3. **binário Go** abre o device fresco a cada operação e o `/health` faz `os.Stat` a cada
+   request (estado real); um watchdog loga as transições no journal.
+
+Ou seja: desligou → `lp0` some → `/health` reporta `ok:false`; religou → QEMU re-apega →
+udev recria o node → próximo print/health funciona sem reiniciar nada.
