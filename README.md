@@ -58,6 +58,28 @@ sudo ./deploy/setup_vm.sh
 
 Cria venv, instala o serviço systemd (`elgin-print-api`) e sobe a API na porta 8000.
 
+## 📥 Downloads (manuais e drivers)
+
+Arquivos incluídos neste repositório:
+
+- **Manuais** (`docs/manuais/`):
+  - `manual-programacao-elgin-i9.pdf` — manual de programação (ESC/POS)
+  - `manual-usuario-elgin-i9-full.pdf` — manual do usuário
+  - `manual-rapido-elgin-i9.pdf` — guia rápido
+- **Drivers Windows** (`drivers/`):
+  - `Driver-Elgin-i9-FULL-1.8.0.2.exe` — driver i9 FULL (recomendado)
+  - `Driver-Elgin-i9-1.8.0.1.exe` — driver i9
+
+**Links oficiais:**
+
+- Download completo (Windows + Linux + manuais, ~281MB):
+  https://www.bztech.com.br/arquivos/driver-elgin-i7-i8-e-i9-windows-e-linux.zip
+- Página de downloads (Bz Tech): https://www.bztech.com.br/downloads
+- Manual de programação i9 (Bz Tech): https://www.bztech.com.br/downloads/manual-programacao-elgin-i9
+- Wiki Elgin Developer Community (dicas, buzzer, logs):
+  https://github.com/ElginDeveloperCommunity/Impressoras/wiki
+- Elgin (fabricante): https://www.elgin.com.br/
+
 ## Roadmap
 
 - [x] Script CLI de impressão (corte, alinhamento, fontes)
