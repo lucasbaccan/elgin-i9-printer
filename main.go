@@ -4,14 +4,27 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
-// LP é o device da impressora (sobrescrevível via ELGIN_LP).
-var LP = "/dev/usb/lp0"
+// LP é a impressora em uso (sobrescrevível via ELGIN_LP):
+//   - Linux/macOS/BSD: device usblp (ex: /dev/usb/lp0)
+//   - Windows: nome da fila de impressão (vazio = fila padrão)
+var LP = lpDefault()
 
 func main() {
 	if v := os.Getenv("ELGIN_LP"); v != "" {
 		LP = v
+	} else if d := detectarImpressora(); d != "" {
+		LP = d
+		if d != lpDefault() {
+			fmt.Fprintf(os.Stderr, "elgin-print: impressora detectada automaticamente: %s\n", d)
+		}
+	}
+	if v := os.Getenv("ELGIN_LINE_DELAY_MS"); v != "" {
+		if ms, err := strconv.Atoi(v); err == nil && ms >= 0 {
+			lineDelay = time.Duration(ms) * time.Millisecond
+		}
 	}
 
 	if len(os.Args) < 2 {
@@ -57,10 +70,14 @@ Flags do print:
   -e TEXTO    linha alinhada à esquerda
   -c TEXTO    linha centralizada
   -d TEXTO    linha alinhada à direita
+  -f          respiro de 3 linhas antes do corte (sem = corte rente, compacto)
   (texto sem flag = centralizado)
 
 Env:
-  ELGIN_LP        device da impressora (default /dev/usb/lp0)
+  ELGIN_LP        impressora em uso (Linux: /dev/usb/lpN; Windows: nome da fila).
+                  Vazio = detecção automática: acha a Elgin I9 por USB ID
+                  (20d1:7008); não achando, usa a primeira impressora USB
+                  (modo genérico). Default sem detecção: /dev/usb/lp0.
   ELGIN_API_PORT  porta da API/Web UI (default 8000)
 `)
 }
@@ -74,9 +91,10 @@ func cmdPrint(args []string) {
 	}
 	var titulo string
 	var itens []item
+	feedCorte := 0
 
 	if len(args) == 0 {
-		if err := enviar(cupomTeste(), true); err != nil {
+		if err := enviar(cupomTeste(), true, feedCorte); err != nil {
 			fatal(err.Error())
 		}
 		fmt.Println("OK - cupom de teste impresso!")
@@ -86,6 +104,8 @@ func cmdPrint(args []string) {
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch a {
+		case "-f":
+			feedCorte = feedCortePadrao
 		case "-t":
 			i++
 			if i >= len(args) {
@@ -119,7 +139,7 @@ func cmdPrint(args []string) {
 		linhas = append(linhas, Linha{Texto: it.text, Alinhamento: al})
 	}
 
-	if err := enviar(montarCupom(titulo, linhas), true); err != nil {
+	if err := enviar(montarCupom(titulo, linhas), true, feedCorte); err != nil {
 		fatal(err.Error())
 	}
 	fmt.Printf("OK - %d linha(s) impressa(s)!\n", len(linhas))
@@ -134,14 +154,14 @@ func cmdFeed(args []string) {
 		}
 		n = v
 	}
-	if err := enviar(feedBytes(n), false); err != nil {
+	if err := enviar(feedBytes(n), false, 0); err != nil {
 		fatal(err.Error())
 	}
 	fmt.Printf("OK - %d linha(s) avançada(s)!\n", n)
 }
 
 func cmdCut() {
-	if err := enviar(cutBytes(), false); err != nil {
+	if err := enviar(cutBytes(), false, 0); err != nil {
 		fatal(err.Error())
 	}
 	fmt.Println("OK - corte acionado!")
