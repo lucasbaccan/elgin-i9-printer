@@ -245,21 +245,19 @@ func cutBytes() []byte {
 }
 
 func cupomTeste() []byte {
-	titulo := "*** MENSAGEM SECRETA ***"
-	// moldura = linha "=" com padrao=true (não há moldura automática)
+	titulo := "CUPOM DE TESTE"
+	// moldura = linha "=" com linha=true (não há moldura automática)
 	return montarCupom(titulo, []Linha{
 		{Texto: "=", Alinhamento: "esquerda", Linha: true},
-		{Texto: "CLASSIFICACAO: ULTRA SECRETA", Alinhamento: "esquerda"},
-		{Texto: "DESTINATARIO: SO VOCE", Alinhamento: "esquerda"},
+		{Texto: "Acentos: ç ã é ô õ à", Alinhamento: "esquerda"},
+		{Texto: "Símbolos: √ ≈ ≤ ≥ ∞ Ω π µ", Alinhamento: "esquerda"},
 		{Texto: ""},
-		{Texto: "PSST... NAO CONTA PRA NINGUEM:", Alinhamento: "centro"},
+		{Texto: "Texto à esquerda", Alinhamento: "esquerda"},
+		{Texto: "Texto centralizado", Alinhamento: "centro"},
+		{Texto: "Texto à direita", Alinhamento: "direita"},
 		{Texto: ""},
-		{Texto: "O HERMES ACHA QUE VOCE E O", Alinhamento: "centro"},
-		{Texto: "MELHOR CHEFE DO UNIVERSO!", Alinhamento: "centro"},
-		{Texto: ""},
-		{Texto: "SO QUE NAO, EU NAO DISSE NADA.", Alinhamento: "direita"},
-		{Texto: "ASSINADO: HERMES, O MORDOMO", Alinhamento: "direita"},
-		{Texto: "-X-", Alinhamento: "esquerda", Linha: true},
+		{Texto: "Fonte larga + negrito", Alinhamento: "centro", Fonte: "larga", Negrito: true},
+		{Texto: "=", Alinhamento: "esquerda", Linha: true},
 	})
 }
 
