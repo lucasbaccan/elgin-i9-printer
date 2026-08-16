@@ -10,17 +10,45 @@ Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB)
 
 ## Compilando
 
+O projeto usa [mise](https://mise.jdx.dev/) para a versão do Go (definida em
+[`mise.local.toml`](mise.local.toml) — `go 1.26.6`):
+
 ```bash
-make cross     # binário estático linux/amd64 (roda em Alpine/musl, ~5MB)
+mise install          # instala a versão do Go declarada
+mise exec go --version
 ```
 
-Ou manualmente:
+**Linux (binário estático — roda em Alpine/musl):**
 
 ```bash
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o elgin-print .
 ```
 
+**Windows (exe):**
+
+```powershell
+$env:CGO_ENABLED="0"; $env:GOOS="windows"; $env:GOARCH="amd64"
+go build -trimpath -ldflags "-s -w" -o elgin-print.exe .
+```
+
+**Testes e lint:**
+
+```bash
+go vet ./... && go test ./...
+```
+
 Há um CI (`.github/workflows/build.yml`) que roda `go vet`, `go test` e gera o binário a cada push/PR.
+
+### Observações
+
+- **Impressora padrão (Windows)**: sem `ELGIN_LP`, o binário usa a **impressora padrão do Windows**. Se a padrão for
+  "Microsoft Print to PDF", o job é salvo como arquivo em Documentos em vez de imprimir — defina a Elgin como padrão
+  ou aponte `ELGIN_LP` para o nome da fila (ex.: `ELGIN_LP="ELGIN i9(USB)"`).
+- **Detecção automática (Linux)**: sem `ELGIN_LP`, o binário acha a Elgin pelo USB ID `20d1:7008`; não achando, usa a
+  primeira impressora USB (modo genérico) — veja a seção abaixo.
+- **Windows + spooler**: o envio é via winspool (job RAW), então a fila precisa existir com o driver instalado
+  (driver da Elgin ou "Generic / Text Only"). A porta da fila deve ser USB (não `FILE:`).
+- **`ELGIN_LP`** aceita device no Linux (`/dev/usb/lpN`) ou nome da fila no Windows.
 
 ## Como usar (CLI)
 
