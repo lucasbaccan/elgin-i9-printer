@@ -1,6 +1,6 @@
 # Elgin I9 Printer 🖨️
 
-Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB) do homelab — agora num **único binário Go estático**.
+Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB) — num **único binário Go estático**.
 
 - **Binário `elgin-print`**: substitui a antiga CLI bash + API FastAPI (um arquivo, zero dependências no destino).
 - **CLI**: subcomandos `print`, `serve`, `feed`, `cut`.
@@ -141,7 +141,7 @@ sudo ./deploy/setup.sh ./elgin-print
 
 O `setup.sh` detecta o init system: **OpenRC** (Alpine) → `/etc/init.d/elgin-print`, ou **systemd** → `/etc/systemd/system/elgin-print.service`. Também instala a regra udev `50-elgin-i9.rules`.
 
-Guia completo para criar a VM no Proxmox (com USB passthrough nativo e auto-reconexão): [`deploy/alpine-vm.md`](deploy/alpine-vm.md).
+Guia completo de **VM dedicada** (Alpine + QEMU/KVM, USB passthrough nativo e auto-reconexão): [`deploy/alpine-vm.md`](deploy/alpine-vm.md).
 
 ## 📥 Downloads (manuais e drivers)
 
@@ -192,6 +192,7 @@ Arquivos incluídos neste repositório:
   espaço invisível (`" "`) para forçar o avanço.
 - **Área de impressão**: 72mm fixos (576 dots) = 48 colunas na Fonte A. `GS W` não aumenta.
 - **Udev**: o node `lp0` é da subsystem `usbmisc` (não `usb`) — regra udev precisa disso.
-- **LXC vs VM**: em LXC unprivileged o seccomp bloqueia `mknod`/`mount` (USB = config manual
-  no host + restart). Em VM o passthrough USB é nativo (`usb0: host=20d1:7008`) e o device
-  volta sozinho quando a impressora religa.
+- **Container vs VM**: em container (Docker/LXC) o sysfs é limitado — a detecção
+  automática por USB ID não funciona, use `ELGIN_LP` explícito. Em VM com USB
+  passthrough nativo (`hostdev`/`usb0: host=20d1:7008`) o device volta sozinho
+  quando a impressora religa.

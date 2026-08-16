@@ -16,7 +16,7 @@ Tudo que foi descoberto na prática (testando na impressora física), incluindo 
 
 | Path | Uso | Observações |
 |---|---|---|
-| `/dev/usb/lp0` | Escrita ESC/POS direta (usblp, major 180) | **Some se a impressora for religada** com o LXC rodando (o udev do host remove/recria `/dev/usb`; o bind mount fica preso no inode "deleted"). Solução: reiniciar o LXC |
+| `/dev/usb/lp0` | Escrita ESC/POS direta (usblp, major 180) | **Some se a impressora for religada** (o udev remove/recria o node). Em container com bind mount o inode fica "deleted" — reinicie o container; em VM o passthrough re-apega sozinho |
 | `/dev/bus/usb/001/0XX` | Device inteiro via libusb (major 189) | Diretório estável; o node muda de número a cada religada (`015` → `020`) |
 
 ## Área de impressão e fontes
@@ -121,18 +121,17 @@ Tabela B: 1-Claro=ON-ON · 2=OFF-OFF · 3=ON-OFF · 4-Escuro=OFF-ON
 - **Beep ao fim da impressão (campainha)**: configurado no DRIVER (Windows: Propriedades → Preferências → Configurações Avançadas → aba "Campainha"). Não é da impressora.
 - **Bipes de erro** (tampa aberta: curto-longo-curto; sem papel: 3 curtos): **fixos no firmware**, não desabilitáveis.
 
-## USB passthrough em LXC Proxmox (o caminho das pedras)
+## USB em containers vs VM
 
-1. **LXC unprivileged bloqueia `mknod` e `mount` via seccomp** (EPERM mesmo como root — `grep Seccomp /proc/self/status` → 2). Não existe `usb0` no schema da API do LXC (só VM tem).
-2. **Config manual no host** (`/etc/pve/lxc/<vmid>.conf`, backup antes):
-   ```
-   lxc.cgroup2.devices.allow: c 189:* rwm
-   lxc.cgroup2.devices.allow: c 180:* rwm
-   lxc.mount.entry: /dev/bus/usb dev/bus/usb none bind,create=dir,optional 0 0
-   lxc.mount.entry: /dev/usb dev/usb none bind,create=dir,optional 0 0
-   ```
-   Requer **restart do LXC** para aplicar.
-3. **Permissões**: os nodes nascem `root:lp 0660` e o root do container NÃO consegue chmod (uid não mapeado). Regra udev no HOST (`/etc/udev/rules.d/50-elgin-i9.rules`):
+1. **Em container (Docker/LXC) o sysfs é limitado**: a detecção automática por
+   USB ID não enxerga `/sys/class/usbmisc` — use **`ELGIN_LP` explícito**.
+   Religar a impressora pode deixar o `/dev/usb/lp0` "preso" (inode deleted) —
+   reinicie o container.
+2. **Em VM, o passthrough USB é nativo** (`usb0: host=20d1:7008` no QEMU):
+   o hypervisor re-apega o device quando a impressora religa, o udev recria o
+   node e nada precisa ser reiniciado. É a opção recomendada.
+3. **Permissões (Linux)**: os nodes nascem `root:lp 0660` — a regra udev do
+   repo (`deploy/50-elgin-i9.rules`) aplica `MODE=0666`:
    ```
    SUBSYSTEM=="usb", ATTRS{idVendor}=="20d1", ATTRS{idProduct}=="7008", MODE="0666"
    SUBSYSTEM=="usbmisc", KERNEL=="lp*", ATTRS{idVendor}=="20d1", ATTRS{idProduct}=="7008", MODE="0666"
@@ -166,7 +165,10 @@ substituiu a CLI bash + API FastAPI. Subcomandos: `print`, `serve` (API + Web UI
 
 ## Recomendação de arquitetura
 
-**VM em vez de LXC**: o USB passthrough em VM é nativo (`usb0: host=20d1:7008`), o udev funciona, e religar a impressora não derruba nada. No LXC, religar a impressora exige reiniciar o container (o `/dev/usb` "deleted").
+**VM em vez de container**: o USB passthrough em VM é nativo (`hostdev` no
+libvirt / `usb0: host=20d1:7008` no QEMU), o udev funciona, e religar a
+impressora não derruba nada. Em container, religar a impressora exige
+reiniciar o container (o `/dev/usb` fica "deleted").
 
 ### Auto-reconexão em VM
 
