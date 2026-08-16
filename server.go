@@ -13,15 +13,6 @@ import (
 //go:embed webui/index.html
 var webUI []byte
 
-// devicePresent informa se o node do device existe agora (estado REAL, usado
-// pelo /health). No passthrough USB nativo de VM, o node volta sozinho quando a
-// impressora é religada — cada operação reabre o device fresco, então a
-// reconexão é automática.
-func devicePresent() bool {
-	_, err := os.Stat(LP)
-	return err == nil
-}
-
 func cmdServe() {
 	port := os.Getenv("ELGIN_API_PORT")
 	if port == "" {
@@ -33,8 +24,8 @@ func cmdServe() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleRoot)
 	mux.HandleFunc("/health", handleHealth)
+	mux.HandleFunc("/ping", handlePing)
 	mux.HandleFunc("/print", handlePrint)
-	mux.HandleFunc("/test", handleTest)
 	mux.HandleFunc("/feed", handleFeed)
 	mux.HandleFunc("/cut", handleCut)
 
@@ -99,6 +90,18 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": ok, "device": LP, "status": status})
 }
 
+// handlePing imprime "pong" na impressora (teste real de ponta a ponta) e
+// responde "pong" no corpo (texto puro, sem JSON). Sai SEM o modo compacto:
+// o respiro antes do corte destaca o cupom de teste.
+func handlePing(w http.ResponseWriter, r *http.Request) {
+	if err := enviar(montarCupom("", []Linha{{Texto: "pong", Alinhamento: "centro"}}), true, feedCortePadrao); err != nil {
+		writeErr(w, 503, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte("pong"))
+}
+
 func handlePrint(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeErr(w, http.StatusMethodNotAllowed, "use POST")
@@ -117,23 +120,17 @@ func handlePrint(w http.ResponseWriter, r *http.Request) {
 	if cupom.Titulo != nil {
 		titulo = *cupom.Titulo
 	}
-	if err := enviar(montarCupom(titulo, cupom.Linhas), true); err != nil {
+	// modo compacto é o padrão (true/ausente): corte rente. compact=false dá
+	// o respiro (feedCortePadrao linhas) antes do corte.
+	feedCorte := 0
+	if cupom.Compact != nil && !*cupom.Compact {
+		feedCorte = feedCortePadrao
+	}
+	if err := enviar(montarCupom(titulo, cupom.Linhas), true, feedCorte); err != nil {
 		writeErr(w, 503, err.Error())
 		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": true, "linhas": len(cupom.Linhas)})
-}
-
-func handleTest(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeErr(w, http.StatusMethodNotAllowed, "use POST")
-		return
-	}
-	if err := enviar(cupomTeste(), true); err != nil {
-		writeErr(w, 503, err.Error())
-		return
-	}
-	writeJSON(w, 200, map[string]any{"ok": true, "mensagem": "cupom de teste impresso"})
 }
 
 func handleFeed(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +147,7 @@ func handleFeed(w http.ResponseWriter, r *http.Request) {
 	if body.Linhas <= 0 {
 		body.Linhas = 3
 	}
-	if err := enviar(feedBytes(body.Linhas), false); err != nil {
+	if err := enviar(feedBytes(body.Linhas), false, 0); err != nil {
 		writeErr(w, 503, err.Error())
 		return
 	}
@@ -162,7 +159,7 @@ func handleCut(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusMethodNotAllowed, "use POST")
 		return
 	}
-	if err := enviar(cutBytes(), false); err != nil {
+	if err := enviar(cutBytes(), false, 0); err != nil {
 		writeErr(w, 503, err.Error())
 		return
 	}
@@ -176,7 +173,7 @@ func apiDocs() map[string]any {
 		"endpoints": map[string]string{
 			"GET /":       "Web UI (navegador) / esta documentação (curl/API)",
 			"GET /health": "status da impressora (device)",
-			"POST /test":  "imprime um cupom de teste",
+			"GET /ping":   "pong (health-check simples)",
 			"POST /print": "imprime cupom personalizado (corpo JSON)",
 			"POST /feed":  "avança papel (corpo {\"linhas\": N})",
 			"POST /cut":   "aciona a guilhotina",
@@ -191,24 +188,25 @@ func apiDocs() map[string]any {
 			"larga":  "largura 2x - 24 colunas por linha (bom para títulos)",
 		},
 		"preenchimento_de_linha": map[string]any{
-			"campo":         "padrao",
-			"como_funciona": "com padrao=true, o campo texto é repetido até preencher a linha inteira (48 colunas na fonte normal, 24 na larga)",
-			"exemplo":       map[string]any{"texto": "-X", "padrao": true, "alinhamento": "esquerda"},
+			"campo":         "linha",
+			"como_funciona": "com linha=true, o campo texto é repetido até preencher a linha inteira (48 colunas na fonte normal, 24 na larga)",
+			"exemplo":       map[string]any{"texto": "-X", "linha": true, "alinhamento": "esquerda"},
 			"resultado":     preencher("-X", WidthNormal),
 		},
+		"quebra_de_linha": "textos maiores que a largura da linha (48 normal / 24 larga) são quebrados automaticamente em várias linhas — nada é truncado",
+		"compact": "campo compact (bool) no POST /print: true/ausente = corte rente à última linha (modo compacto, padrão); false = respiro de 3 linhas antes do corte",
 		"exemplo_completo": map[string]any{
 			"titulo": "PEDIDO #123",
 			"linhas": []map[string]any{
-				{"texto": "=", "alinhamento": "esquerda", "padrao": true},
+				{"texto": "=", "alinhamento": "esquerda", "linha": true},
 				{"texto": "1x Hamburguer", "alinhamento": "esquerda"},
 				{"texto": "2x Refrigerante", "alinhamento": "esquerda"},
 				{"texto": "TOTAL: R$ 45,00", "alinhamento": "direita", "fonte": "larga"},
-				{"texto": "=", "alinhamento": "esquerda", "padrao": true},
+				{"texto": "=", "alinhamento": "esquerda", "linha": true},
 			},
 		},
 		"como_chamar": map[string]string{
 			"health": "curl http://<host>:8000/health",
-			"teste":  "curl -X POST http://<host>:8000/test",
 			"print":  "curl -X POST http://<host>:8000/print -H 'Content-Type: application/json' -d '{...}'",
 			"feed":   "curl -X POST http://<host>:8000/feed -H 'Content-Type: application/json' -d '{\"linhas\": 5}'",
 			"cut":    "curl -X POST http://<host>:8000/cut",

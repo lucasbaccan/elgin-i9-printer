@@ -58,7 +58,7 @@ func TestPrintEnviaEImprime(t *testing.T) {
 	var captured []byte
 	var cut bool
 	orig := enviar
-	enviar = func(dados []byte, cortar bool) error { captured = dados; cut = cortar; return nil }
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; cut = cortar; return nil }
 	defer func() { enviar = orig }()
 
 	body := `{"titulo":"PEDIDO #1","linhas":[{"texto":"1x Hamburguer","alinhamento":"esquerda"}]}`
@@ -79,7 +79,7 @@ func TestPrintEnviaEImprime(t *testing.T) {
 
 func TestPrintVazioRetorna400(t *testing.T) {
 	orig := enviar
-	enviar = func(dados []byte, cortar bool) error { return nil }
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { return nil }
 	defer func() { enviar = orig }()
 
 	rec := httptest.NewRecorder()
@@ -104,7 +104,7 @@ func TestPrintJSONInvalidoRetorna400(t *testing.T) {
 func TestFeedEndpoint(t *testing.T) {
 	var captured []byte
 	orig := enviar
-	enviar = func(dados []byte, cortar bool) error { captured = dados; return nil }
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; return nil }
 	defer func() { enviar = orig }()
 
 	rec := httptest.NewRecorder()
@@ -119,10 +119,31 @@ func TestFeedEndpoint(t *testing.T) {
 	}
 }
 
+func TestPingEndpoint(t *testing.T) {
+	var captured []byte
+	orig := enviar
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; return nil }
+	defer func() { enviar = orig }()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	handlePing(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("ping deveria retornar 200, veio %d", rec.Code)
+	}
+	if rec.Body.String() != "pong" {
+		t.Fatalf("ping deveria responder 'pong', veio %q", rec.Body.String())
+	}
+	if !bytes.Contains(captured, []byte("pong")) {
+		t.Fatalf("ping deveria imprimir 'pong', bytes enviados: %q", captured)
+	}
+}
+
 func TestCutEndpoint(t *testing.T) {
 	var captured []byte
 	orig := enviar
-	enviar = func(dados []byte, cortar bool) error { captured = dados; return nil }
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; return nil }
 	defer func() { enviar = orig }()
 
 	rec := httptest.NewRecorder()

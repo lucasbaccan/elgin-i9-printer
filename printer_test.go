@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestMontarCupomInicializacao(t *testing.T) {
 	out := montarCupom("", nil)
-	want := []byte("\x1b\x40\x1b\x4d\x00") // ESC @ + ESC M 0 (Fonte A)
+	// ESC @ + ESC t 3 (tabela PT da i9) + ESC M 0 (Fonte A)
+	want := []byte("\x1b\x40\x1b\x74\x03\x1b\x4d\x00")
 	if !bytes.HasPrefix(out, want) {
-		t.Fatalf("cupom deveria começar com ESC @ + ESC M 0 (Fonte A), veio %x", out[:8])
+		t.Fatalf("cupom deveria começar com ESC @ + ESC t 3 + ESC M 0 (Fonte A), veio %x", out[:10])
 	}
 }
 
@@ -31,15 +33,30 @@ func TestMontarCupomTituloLargura2x(t *testing.T) {
 	}
 }
 
-func TestMontarCupomTituloTruncado(t *testing.T) {
-	longo := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // 32 chars > 24
+func TestMontarCupomTituloQuebraEmLinhas(t *testing.T) {
+	longo := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // 32 chars > 24 (larga)
 	out := montarCupom(longo, nil)
-	// o título não pode exceder 24 colunas
+	// título > 24 colunas QUEBRA em 2 linhas (24 + 8), não trunca
 	if bytes.Contains(out, []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")) {
-		t.Fatal("título de 32 chars deveria ser truncado para 24")
+		t.Fatal("título de 32 chars não deveria aparecer inteiro numa linha")
 	}
-	if !bytes.Contains(out, []byte("AAAAAAAAAAAAAAAAAAAAAAAA")) { // 24 A's
-		t.Fatal("título truncado de 24 chars não encontrado")
+	if !bytes.Contains(out, []byte("AAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAA")) { // 24 + \n + 8
+		t.Fatalf("título de 32 chars deveria quebrar em 24+8 com \\n: %q", out)
+	}
+}
+
+func TestMontarCupomLinhaLongaQuebra(t *testing.T) {
+	longa := strings.Repeat("x", 100) // 100 chars > 48
+	out := montarCupom("", []Linha{{Texto: longa, Alinhamento: "esquerda"}})
+	// 100 chars viram 3 linhas: 48 + 48 + 4 (alinhamento ESC a 0 entre elas)
+	if n := bytes.Count(out, []byte(strings.Repeat("x", 48))); n != 2 {
+		t.Fatalf("esperado 2 blocos de 48 x's (linhas 1 e 2), veio %d", n)
+	}
+	if !bytes.Contains(out, []byte(strings.Repeat("x", 4)+"\n")) {
+		t.Fatal("sobra de 4 chars deveria estar na última linha")
+	}
+	if bytes.Contains(out, []byte(longa)) {
+		t.Fatal("linha de 100 chars não deveria aparecer inteira (sem \\n no meio)")
 	}
 }
 
@@ -52,7 +69,7 @@ func TestMontarCupomLinhaVaziaViraEspaco(t *testing.T) {
 }
 
 func TestMontarCupomPadraoPreenche48(t *testing.T) {
-	out := montarCupom("", []Linha{{Texto: "-X-", Alinhamento: "esquerda", Padrao: true}})
+	out := montarCupom("", []Linha{{Texto: "-X-", Alinhamento: "esquerda", Linha: true}})
 	filled := preencher("-X-", WidthNormal)
 	if len([]rune(filled)) != WidthNormal {
 		t.Fatalf("preencher deveria gerar %d colunas, gerou %d", WidthNormal, len([]rune(filled)))
@@ -89,14 +106,7 @@ func TestMontarCupomAlinhamentos(t *testing.T) {
 	}
 }
 
-func TestMontarCupomMoldura48(t *testing.T) {
-	out := montarCupom("", nil)
-	moldura := bytes.Repeat([]byte("="), WidthNormal)
-	// moldura de abertura (após ESC @ + Fonte A + alinhamento esquerda)
-	if bytes.Count(out, moldura) < 2 {
-		t.Fatal("cupom deveria ter moldura de abertura e fechamento (48 '=')")
-	}
-}
+
 
 func TestMontarCupomNaoContemCorte(t *testing.T) {
 	out := montarCupom("T", []Linha{{Texto: "x"}})
@@ -112,6 +122,29 @@ func TestPreencher(t *testing.T) {
 	}
 	if got := preencher("", 48); got != "" {
 		t.Fatalf("preencher('', 48) deveria ser vazio, veio %q", got)
+	}
+}
+
+func TestEncodeTexto(t *testing.T) {
+	// ASCII passa direto
+	if got := encodeTexto("ABC 123"); string(got) != "ABC 123" {
+		t.Fatalf("ASCII deveria passar direto: %q", got)
+	}
+	// acentos portugueses viram bytes da PC860 (gerado do codec)
+	if got := encodeTexto("çãéôõ"); !bytes.Equal(got, []byte{0x87, 0x84, 0x82, 0x93, 0x94}) {
+		t.Fatalf("çãéôõ deveria virar 87 84 82 93 94, veio %x", got)
+	}
+	// símbolos da faixa alta (funcionam na i9)
+	if got := encodeTexto("█░■±°"); !bytes.Equal(got, []byte{0xDB, 0xB0, 0xFE, 0xF1, 0xF8}) {
+		t.Fatalf("█░■±° deveria virar DB B0 FE F1 F8, veio %x", got)
+	}
+	// não mapeado (emoji) vira '?' — evita lixo de UTF-8 cru
+	if got := encodeTexto("😀"); !bytes.Equal(got, []byte{'?'}) {
+		t.Fatalf("emoji deveria virar '?', veio %x", got)
+	}
+	// bullet (U+2022) usa o ponto médio da PC860 (0xFA) — a i9 não tem glifo de bullet
+	if got := encodeTexto("•"); !bytes.Equal(got, []byte{0xFA}) {
+		t.Fatalf("• deveria virar FA, veio %x", got)
 	}
 }
 
@@ -150,7 +183,7 @@ func TestEnviarCorteEmWriteSeparado(t *testing.T) {
 	defer func() { LP = origLP }()
 
 	dados := montarCupom("T", []Linha{{Texto: "conteudo"}})
-	if err := enviar(dados, true); err != nil {
+	if err := enviar(dados, true, 0); err != nil {
 		t.Fatalf("enviar falhou: %v", err)
 	}
 
@@ -167,6 +200,27 @@ func TestEnviarCorteEmWriteSeparado(t *testing.T) {
 	}
 }
 
+func TestEnviarFeedAntesDoCorte(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "lp0")
+	if err := os.WriteFile(f, nil, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	origLP := LP
+	LP = f
+	defer func() { LP = origLP }()
+
+	dados := montarCupom("T", []Linha{{Texto: "conteudo"}})
+	if err := enviar(dados, true, 3); err != nil {
+		t.Fatalf("enviar falhou: %v", err)
+	}
+	raw, _ := os.ReadFile(f)
+	// com feedCorte=3, deve terminar em ESC d 3 + GS V 66 0
+	want := append(feedBytes(3), cutCmd...)
+	if !bytes.HasSuffix(raw, want) {
+		t.Fatalf("feedCorte=3 deveria terminar em ESC d 3 + corte, fim: %x", raw[len(raw)-10:])
+	}
+}
+
 func TestEnviarSemCorte(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "lp0")
 	if err := os.WriteFile(f, nil, 0o666); err != nil {
@@ -176,7 +230,7 @@ func TestEnviarSemCorte(t *testing.T) {
 	LP = f
 	defer func() { LP = origLP }()
 
-	if err := enviar(feedBytes(3), false); err != nil {
+	if err := enviar(feedBytes(3), false, 0); err != nil {
 		t.Fatalf("enviar falhou: %v", err)
 	}
 	raw, _ := os.ReadFile(f)

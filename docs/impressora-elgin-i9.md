@@ -159,7 +159,7 @@ substituiu a CLI bash + API FastAPI. Subcomandos: `print`, `serve` (API + Web UI
   estão portados em `montarCupom`/`enviar` no código Go — nada foi redescoberto.
 - **Endpoints**: `GET /` (Web UI no navegador / docs JSON via curl), `GET /health`,
   `POST /test`, `POST /print`, `POST /feed`, `POST /cut`. JSON compatível com a API antiga
-  (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, padrao}]`).
+  (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, linha}]`).
 - **Env**: `ELGIN_LP` (default `/dev/usb/lp0`), `ELGIN_API_PORT` (default `8000`).
 - **Deploy**: `deploy/setup.sh` (OpenRC no Alpine, systemd nos demais) + regra udev
   `deploy/50-elgin-i9.rules`. Guia da VM: `deploy/alpine-vm.md`.

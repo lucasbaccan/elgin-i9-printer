@@ -57,10 +57,10 @@ curl -X POST http://<host>:8000/print \
   -d '{
     "titulo": "PEDIDO #123",
     "linhas": [
-      {"texto": "-X-", "alinhamento": "esquerda", "padrao": true},
+      {"texto": "-X-", "alinhamento": "esquerda", "linha": true},
       {"texto": "1x Hamburguer", "alinhamento": "esquerda"},
       {"texto": "TOTAL: R$ 45,00", "alinhamento": "direita", "fonte": "larga", "negrito": true},
-      {"texto": "-X-", "alinhamento": "esquerda", "padrao": true}
+      {"texto": "-X-", "alinhamento": "esquerda", "linha": true}
     ]
   }'
 ```
@@ -75,16 +75,33 @@ curl -X POST http://<host>:8000/print \
 - `alinhamento` — `esquerda` | `centro` | `direita`
 - `fonte` — `normal` | `larga` (largura 2x, bom para títulos/totais)
 - `negrito` — `true`/`false`
-- `padrao` — `true` repete o `texto` até preencher a linha (ex: `"-X"` vira `-X-X-X-X-...`)
+- `linha` — `true` repete o `texto` até preencher a linha (ex: `"-X"` vira `-X-X-X-X-...`)
 
 ## Web UI
 
 Abra `http://<vm>:8000/` no navegador. Oferece:
 
-- **Editor de cupom** (título + linhas com alinhamento/fonte/negrito/padrão) e pré-visualização 48 colunas.
-- Botões **Imprimir** / **Feed N linhas** / **Corte** / **Cupom de teste**.
+- **Editor de cupom** (título + linhas com alinhamento/fonte/negrito/linha) e pré-visualização 48 colunas com **marcador do corte** (tesoura).
+- **Blocos de lista** (bullet/checkbox) — cada item vira uma linha com marcador na impressão.
+- Botões **Imprimir** / **Feed N linhas** / **Corte** / **Ping**.
 - **Layouts prontos** (teste, pedido, etiqueta, moldura).
 - **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
+
+## Detecção da impressora (Linux)
+
+Sem `ELGIN_LP`, o binário procura a **Elgin I9 pelo USB ID `20d1:7008`** no sysfs
+(`/sys/class/usbmisc/lp*` / `/sys/class/usb/lp*`). **Não achando o ID, cai no
+modo genérico**: usa a primeira impressora USB disponível (`/dev/usb/lp0`, `lp1`…).
+Sem nenhuma impressora, mantém `/dev/usb/lp0` e o `/health` reporta indisponível.
+
+## Windows
+
+O binário compila para Windows (`GOOS=windows go build`) e envia os bytes
+ESC/POS pela **fila de impressão via winspool (job RAW)** — funciona com o
+driver da Elgin ou "Generic / Text Only". Sem `ELGIN_LP`, usa a **impressora
+padrão do Windows** (modo genérico); com mais de uma térmica, defina
+`ELGIN_LP` com o **nome da fila** (ex.: `ELGIN_LP=Elgin I9`). Não há detecção
+por USB ID no Windows (exigiria SetupAPI).
 
 ## Instalação na VM (Alpine)
 
