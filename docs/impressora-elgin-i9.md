@@ -160,8 +160,9 @@ substituiu a CLI bash + API FastAPI. Subcomandos: `print`, `serve` (API + Web UI
   `POST /test`, `POST /print`, `POST /feed`, `POST /cut`. JSON compatível com a API antiga
   (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, linha}]`).
 - **Env**: `ELGIN_LP` (default `/dev/usb/lp0`), `ELGIN_API_PORT` (default `8000`).
-- **Deploy**: `deploy/setup.sh` (OpenRC no Alpine, systemd nos demais) + regra udev
-  `deploy/50-elgin-i9.rules`. Guia da VM: `deploy/alpine-vm.md`.
+- **Deploy**: copiar o binário + serviços prontos em `deploy/` (`elgin-print.initd`
+  p/ OpenRC, `elgin-print.service` p/ systemd) + regra udev `deploy/50-elgin-i9.rules`.
+  Guia de VM dedicada: `deploy/alpine-vm.md`.
 
 ## Recomendação de arquitetura
 

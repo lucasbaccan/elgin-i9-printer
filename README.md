@@ -131,18 +131,6 @@ padrão do Windows** (modo genérico); com mais de uma térmica, defina
 `ELGIN_LP` com o **nome da fila** (ex.: `ELGIN_LP=Elgin I9`). Não há detecção
 por USB ID no Windows (exigiria SetupAPI).
 
-## Instalação na VM (Alpine)
-
-A instalação é **copiar 1 binário + habilitar 1 serviço** (sem Python/venv/pip):
-
-```bash
-sudo ./deploy/setup.sh ./elgin-print
-```
-
-O `setup.sh` detecta o init system: **OpenRC** (Alpine) → `/etc/init.d/elgin-print`, ou **systemd** → `/etc/systemd/system/elgin-print.service`. Também instala a regra udev `50-elgin-i9.rules`.
-
-Guia completo de **VM dedicada** (Alpine + QEMU/KVM, USB passthrough nativo e auto-reconexão): [`deploy/alpine-vm.md`](deploy/alpine-vm.md).
-
 ## 📥 Downloads (manuais e drivers)
 
 Arquivos incluídos neste repositório:
@@ -164,16 +152,6 @@ Arquivos incluídos neste repositório:
 - Wiki Elgin Developer Community (dicas, buzzer, logs):
   https://github.com/ElginDeveloperCommunity/Impressoras/wiki
 - Elgin (fabricante): https://www.elgin.com.br/
-
-## Roadmap
-
-- [x] Script CLI de impressão (corte, alinhamento, fontes)
-- [x] API REST básica (FastAPI)
-- [x] Binário Go único (CLI + API + Web UI) — substitui bash + FastAPI
-- [ ] VM dedicada com USB passthrough nativo (sem restart ao religar a impressora)
-- [ ] Autenticação na API (token)
-- [ ] Testes automatizados + CI
-- [ ] Suporte a imagem/logo no cupom
 
 ## Notas técnicas (pitfalls)
 

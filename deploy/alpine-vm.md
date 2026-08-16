@@ -64,13 +64,22 @@ impressora anexada por **vendor:product** (`20d1:7008` = Elgin I9):
 Na VM Alpine (sem Python, sem dependências):
 
 ```sh
-# copie o binário estático e a pasta deploy/ (scp de onde compilou)
-sudo ./deploy/setup.sh ./elgin-print
-```
+# copie o binário estático (scp de onde compilou) e instale como serviço:
+sudo install -m 0755 elgin-print /usr/local/bin/elgin-print
 
-O `setup.sh` detecta o init system: **OpenRC** (Alpine) → `/etc/init.d/elgin-print`,
-ou **systemd** → `/etc/systemd/system/elgin-print.service`. Também instala a
-regra udev `50-elgin-i9.rules` (permissão 0666 no `/dev/usb/lp0`).
+# Alpine (OpenRC):
+sudo cp deploy/elgin-print.initd /etc/init.d/elgin-print
+sudo rc-update add elgin-print default
+sudo rc-service elgin-print start
+
+# Demais distros (systemd):
+sudo cp deploy/elgin-print.service /etc/systemd/system/
+sudo systemctl enable --now elgin-print
+
+# regra udev de permissão (0666 no /dev/usb/lp0):
+sudo cp deploy/50-elgin-i9.rules /etc/udev/rules.d/
+sudo udevadm control --reload
+```
 
 A detecção automática por USB ID funciona numa VM (sysfs completo) — o serviço
 não precisa de `ELGIN_LP` configurado.
