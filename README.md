@@ -144,6 +144,12 @@ Abra `http://<vm>:8000/` no navegador. Oferece:
 - **Layouts prontos** (teste, pedido, etiqueta, moldura).
 - **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
 
+![Web UI: construtor de cupom com blocos de imagem e QR code](docs/screenshots/webui-construtor-blocos-imagem-qr.png)
+
+Exemplo impresso na Elgin i9 (logo 1-bit dithered + QR code lido de primeira):
+
+![Cupom impresso: logo + QR code](docs/screenshots/cupom-impresso-imagem-qr.png)
+
 ## Detecção da impressora (Linux)
 
 Sem `ELGIN_LP`, o binário procura a **Elgin I9 pelo USB ID `20d1:7008`** no sysfs
