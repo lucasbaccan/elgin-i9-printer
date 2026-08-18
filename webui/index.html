@@ -57,7 +57,7 @@
     padding: 10px 18px;
     margin-bottom: 20px;
   }
-  .util-group { display: flex; gap: 8px; align-items: center; }
+  .util-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
   .util-group .sub { margin-right: 2px; }
   button {
     font: inherit;
@@ -315,7 +315,18 @@
 .fa-bold::before{content:'\f032'} .fa-align-left::before{content:'\f036'} .fa-align-center::before{content:'\f037'} .fa-align-right::before{content:'\f038'}
 .fa-print::before{content:'\f02f'} .fa-plus::before{content:'\f067'} .fa-list-ul::before{content:'\f03a'}
 .fa-xmark::before{content:'\f00d'} .fa-grip-vertical::before{content:'\f58e'} .fa-minus::before{content:'\f068'}
-.fa-trash-can::before{content:'2ed'} .fa-text-height::before{content:'034'} .fa-scissors::before{content:'0c4'} .fa-circle-question::before{content:'059'} .fa-copy::before{content:'0c5'}
+.fa-trash-can::before{content:'\f2ed'} .fa-text-height::before{content:'\f034'} .fa-scissors::before{content:'\f0c4'} .fa-circle-question::before{content:'\f059'} .fa-copy::before{content:'\f0c5'}
+/* Responsivo para telas pequenas (mobile ~375px): no fim da folha para
+   vencer o cascade das regras base. Encolhe o preview para as 48 colunas
+   do papel caberem sem estourar a largura da tela. */
+@media (max-width: 600px) {
+  .wrap { padding: 12px; }
+  header { padding: 12px 14px; }
+  .card { padding: 14px; }
+  .preview { font-size: 9px; padding: 12px 10px; min-height: 160px; }
+  .modal-overlay { padding: 16px 8px; }
+  .modal { padding: 16px 14px; }
+}
 </style>
 </head>
 <body>
@@ -367,11 +378,11 @@
 
         <label style="margin-bottom:6px">Linhas do cupom</label>
         <div id="lines"></div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap">
-          <button onclick="addLine()" style="flex:1; min-width:150px" title="Adicionar uma linha de texto simples"><i class="fa fa-plus"></i> Linha de texto</button>
-          <button onclick="addLista()" style="flex:1; min-width:150px" title="Adicionar um bloco de lista: cada item vira um bullet • ou checkbox [ ] na impressão"><i class="fa fa-list-ul"></i> Lista (bullet/checkbox)</button>
-          <button onclick="addImagem()" style="flex:1; min-width:150px" title="Adicionar uma imagem ao cupom (logo, foto) — convertida para 1-bit e ajustada à largura do papel">🖼️ Imagem</button>
-          <button onclick="addQr()" style="flex:1; min-width:150px" title="Adicionar um QR code a partir de um texto/URL, impresso como imagem (legível por scanner)">🔳 QR code</button>
+        <div style="display:flex; flex-wrap:wrap; gap:8px">
+          <button onclick="addLine()" style="flex:1; min-width:0" title="Adicionar uma linha de texto simples"><i class="fa fa-plus"></i> Linha de texto</button>
+          <button onclick="addLista()" style="flex:1; min-width:0" title="Adicionar um bloco de lista: cada item vira um bullet • ou checkbox [ ] na impressão"><i class="fa fa-list-ul"></i> Lista (bullet/checkbox)</button>
+          <button onclick="addImagem()" style="flex:1; min-width:0" title="Adicionar uma imagem ao cupom (logo, foto) — convertida para 1-bit e ajustada à largura do papel">🖼️ Imagem</button>
+          <button onclick="addQr()" style="flex:1; min-width:0" title="Adicionar um QR code a partir de um texto/URL, impresso como imagem (legível por scanner)">🔳 QR code</button>
         </div>
       </div>
 
