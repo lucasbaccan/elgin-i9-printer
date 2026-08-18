@@ -1,0 +1,16 @@
+[Unit]
+Description=Elgin I9 thermal printer service (Go binary)
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/elgin-print serve
+# Sem ELGIN_LP o binário detecta a Elgin I9 por USB ID (20d1:7008);
+# para forçar um device/fila específica, descomente:
+# Environment=ELGIN_LP=/dev/usb/lp0
+Environment=ELGIN_API_PORT=8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

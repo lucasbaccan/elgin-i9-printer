@@ -1,0 +1,4 @@
+[tools]
+# Versão do Go usada para compilar o elgin-print (gerenciada via mise).
+# Instale com: mise install
+go = "1.26.6"

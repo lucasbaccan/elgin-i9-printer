@@ -1,0 +1,18 @@
+# Uso: docker compose up -d
+#
+# Acessa a impressora USB do host via --device (usblp). A detecção automática
+# por USB ID não funciona dentro do container (sysfs limitado), por isso o
+# ELGIN_LP explícito. Se a Elgin cair em outro /dev/usb/lpN, ajuste o device
+# e o ELGIN_LP (ou use um symlink udev estável, ex: /dev/elgin-i9).
+services:
+  elgin-print:
+    build: .
+    container_name: elgin-print
+    restart: unless-stopped
+    devices:
+      - /dev/usb/lp0:/dev/usb/lp0
+    environment:
+      - ELGIN_LP=/dev/usb/lp0
+      - ELGIN_API_PORT=8000
+    ports:
+      - "8000:8000"

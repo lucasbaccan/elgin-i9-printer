@@ -1,0 +1,20 @@
+#!/sbin/openrc-run
+# Elgin I9 thermal printer — serviço OpenRC (Alpine Linux).
+# Config opcional em /etc/conf.d/elgin-print:
+#   ELGIN_LP=/dev/usb/lp0
+#   ELGIN_API_PORT=8000
+
+name="elgin-print"
+description="Elgin I9 thermal printer service (Go binary)"
+
+command="/usr/local/bin/elgin-print"
+command_args="serve"
+command_background=true
+pidfile="/run/${name}.pid"
+output_log="/var/log/${name}.log"
+error_log="/var/log/${name}.log"
+
+depend() {
+    need localmount
+    after bootmisc
+}
