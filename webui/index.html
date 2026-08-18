@@ -199,6 +199,22 @@
   }
   pre.code .k { color: #79c0ff; }
   pre.code .s { color: #a5d6ff; }
+  /* blocos payload/curl do construtor de API: rótulo + botão copiar */
+  .api-block { margin-top: 10px; }
+  .api-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .api-head .sub { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .api-head button {
+    font-size: 12px;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
   .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
   .toast {
     position: fixed; bottom: 20px; right: 20px;
@@ -285,26 +301,13 @@
   .modal table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
   .modal th, .modal td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
   .modal th { color: var(--muted); font-weight: 600; }
-  /* tabela de referência dos caracteres (copiar/colar) */
-  .modal table.ref { border-collapse: collapse; margin: 6px 0 10px; }
-  .modal table.ref th, .modal table.ref td {
-    font-family: "SFMono-Regular", Consolas, monospace;
-    font-size: 13px;
-    text-align: center;
-    padding: 2px 6px;
-    border: 1px solid var(--border);
-  }
-  .modal table.ref th { background: #f0f2f5; color: var(--muted); font-weight: 600; }
-  .modal table.ref td { cursor: pointer; }
-  .modal table.ref td:hover { background: #f0f2f5; }
-  .modal table.ref td.copied { background: #dcfce7; }
 /* Font Awesome Free 6.7.2 (subset - apenas os iconnes usados; licenca SIL OFL 1.1) */
 @font-face { font-family:'FontAwesome'; src:url(data:font/woff2;base64,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) format('woff2'); font-weight:900; font-style:normal; font-display:block; }
 .fa { font-family:'FontAwesome'; font-weight:900; font-style:normal; line-height:1; }
 .fa-bold::before{content:'\f032'} .fa-align-left::before{content:'\f036'} .fa-align-center::before{content:'\f037'} .fa-align-right::before{content:'\f038'}
 .fa-print::before{content:'\f02f'} .fa-plus::before{content:'\f067'} .fa-list-ul::before{content:'\f03a'}
 .fa-xmark::before{content:'\f00d'} .fa-grip-vertical::before{content:'\f58e'} .fa-minus::before{content:'\f068'}
-.fa-trash-can::before{content:'\f2ed'} .fa-text-height::before{content:'\f034'} .fa-scissors::before{content:'\f0c4'} .fa-circle-question::before{content:'\f059'}
+.fa-trash-can::before{content:'2ed'} .fa-text-height::before{content:'034'} .fa-scissors::before{content:'0c4'} .fa-circle-question::before{content:'059'} .fa-copy::before{content:'0c5'}
 </style>
 </head>
 <body>
@@ -332,8 +335,6 @@
       <button onclick="applyLayout('pedido')">Pedido</button>
       <button onclick="applyLayout('etiqueta')">Etiqueta</button>
       <button onclick="applyLayout('moldura')">Moldura</button>
-      <button onclick="layoutSimbolos()" title="Monta um cupom com todos os caracteres da code page CP860 — para ver quais a impressora aceita de verdade">Símbolos</button>
-      <button onclick="layoutTabela()" title="Tabela compacta com os 127 símbolos em caixas (bordas com caracteres de traço)">Tabela</button>
     </span>
   </div>
 
@@ -374,8 +375,20 @@
   <div class="card">
     <h2>🔧 Construtor de chamadas da API</h2>
     <p class="hint" style="margin-top:0">Conforme você monta o cupom, o JSON e o <code>curl</code> equivalentes são gerados aqui. O endpoint <code>POST /print</code> espera exatamente este corpo.</p>
-    <pre class="code" id="api-json"></pre>
-    <pre class="code" id="api-curl" style="margin-top:10px"></pre>
+    <div class="api-block">
+      <div class="api-head">
+        <span class="sub">Payload JSON</span>
+        <button onclick="copiarApi('json')" title="Copiar o payload JSON do POST /print"><i class="fa fa-copy"></i> Copiar payload</button>
+      </div>
+      <pre class="code" id="api-json"></pre>
+    </div>
+    <div class="api-block">
+      <div class="api-head">
+        <span class="sub">curl</span>
+        <button onclick="copiarApi('curl')" title="Copiar o comando curl equivalente"><i class="fa fa-copy"></i> Copiar curl</button>
+      </div>
+      <pre class="code" id="api-curl"></pre>
+    </div>
   </div>
 </div>
 
@@ -411,14 +424,10 @@
     <ul>
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
-      <li>O layout <b>Símbolos</b> imprime todos os caracteres da code page (CP860) — veja quais a impressora aceita.</li>
       <li>Emojis e a faixa baixa (☺♥♦♣♠) <b>não existem</b> na fonte da i9 — viram <code>?</code>.</li>
       <li><b>Impressora</b>: Linux detecta a Elgin por USB ID (20d1:7008); Windows usa a fila padrão ou <code>ELGIN_LP</code>.</li>
     </ul>
 
-    <h3>Caracteres da code page CP860 — referência</h3>
-    <p>Os 127 caracteres aceitos pela impressora — clique numa célula para copiar o caractere:</p>
-    <div id="simbolos-ref"></div>
   </div>
 </div>
 
@@ -715,27 +724,6 @@ function toggleHelp() {
   document.getElementById('helpModal').classList.toggle('show');
 }
 
-// renderSimbolosRef monta a tabela de referência no modal de ajuda
-// (grade igual à impressa: colunas 1..14, linhas A..I).
-function renderSimbolosRef() {
-  const box = document.getElementById('simbolos-ref');
-  if (!box) return;
-  const N = 14;
-  let html = '<table class="ref"><tr><th></th>';
-  for (let n = 1; n <= N; n++) html += '<th>' + n + '</th>';
-  html += '</tr>';
-  for (let i = 0; i < SIMBOLOS.length; i += N) {
-    html += '<tr><th>' + String.fromCharCode(65 + Math.floor(i / N)) + '</th>';
-    for (let j = 0; j < N; j++) {
-      const s = SIMBOLOS[i + j];
-      html += '<td title="Clique para copiar" onclick="copiarCelula(this)">' + (s ? s.c : '&nbsp;') + '</td>';
-    }
-    html += '</tr>';
-  }
-  html += '</table>';
-  box.innerHTML = html;
-}
-
 // copiarTexto copia um texto para a área de transferência (funciona em http).
 function copiarTexto(txt, msgOk) {
   const ta = document.createElement('textarea');
@@ -751,62 +739,10 @@ function copiarTexto(txt, msgOk) {
   else toast('Não foi possível copiar', true);
 }
 
-// copiarCelula copia o caractere da célula clicada na tabela de referência.
-function copiarCelula(td) {
-  const c = td.textContent.trim();
-  copiarTexto(c, 'Caractere copiado: "' + c + '"');
-  td.classList.add('copied');
-  setTimeout(() => td.classList.remove('copied'), 600);
-}
-
-// SIMBOLOS: caracteres da code page CP860 (0x80-0xFE), em sincronia com o
-// cp860Map do printer.go. O layout Símbolos imprime todos para ver quais a
-// i9 aceita de verdade.
-const SIMBOLOS = [{"c": "Ç", "d": "C cedilha maiuscula"}, {"c": "ü", "d": "u trema"}, {"c": "é", "d": "e agudo"}, {"c": "â", "d": "a circunflexo"}, {"c": "ã", "d": "a til"}, {"c": "à", "d": "a grave"}, {"c": "Á", "d": "A agudo maiuscula"}, {"c": "ç", "d": "c cedilha"}, {"c": "ê", "d": "e circunflexo"}, {"c": "Ê", "d": "E circunflexo maiuscula"}, {"c": "è", "d": "e grave"}, {"c": "Í", "d": "I agudo maiuscula"}, {"c": "Ô", "d": "O circunflexo maiuscula"}, {"c": "ì", "d": "i grave"}, {"c": "Ã", "d": "A til maiuscula"}, {"c": "Â", "d": "A circunflexo maiuscula"}, {"c": "É", "d": "E agudo maiuscula"}, {"c": "À", "d": "A grave maiuscula"}, {"c": "È", "d": "E grave maiuscula"}, {"c": "ô", "d": "o circunflexo"}, {"c": "õ", "d": "o til"}, {"c": "ò", "d": "o grave"}, {"c": "Ú", "d": "U agudo maiuscula"}, {"c": "ù", "d": "u grave"}, {"c": "Ì", "d": "I grave maiuscula"}, {"c": "Õ", "d": "O til maiuscula"}, {"c": "Ü", "d": "U trema maiuscula"}, {"c": "¢", "d": "centavo"}, {"c": "£", "d": "libra"}, {"c": "Ù", "d": "U grave maiuscula"}, {"c": "₧", "d": "peseta"}, {"c": "Ó", "d": "O agudo maiuscula"}, {"c": "á", "d": "a agudo"}, {"c": "í", "d": "i agudo"}, {"c": "ó", "d": "o agudo"}, {"c": "ú", "d": "u agudo"}, {"c": "ñ", "d": "n til"}, {"c": "Ñ", "d": "N til maiuscula"}, {"c": "ª", "d": "ordinal fem."}, {"c": "º", "d": "ordinal masc."}, {"c": "¿", "d": "interrogacao invertida"}, {"c": "Ò", "d": "O grave maiuscula"}, {"c": "¬", "d": "negacao"}, {"c": "½", "d": "um meio"}, {"c": "¼", "d": "um quarto"}, {"c": "¡", "d": "exclamacao invertida"}, {"c": "«", "d": "aspas esquerdas"}, {"c": "»", "d": "aspas direitas"}, {"c": "░", "d": "sombra clara"}, {"c": "▒", "d": "sombra media"}, {"c": "▓", "d": "sombra escura"}, {"c": "│", "d": "linha vertical"}, {"c": "┤", "d": "T p/ esquerda"}, {"c": "╡", "d": "T esq. dupla"}, {"c": "╢", "d": "traco misto"}, {"c": "╖", "d": "traco misto"}, {"c": "╕", "d": "traco misto"}, {"c": "╣", "d": "T esq. dupla"}, {"c": "║", "d": "vertical dupla"}, {"c": "╗", "d": "canto sup.dir. duplo"}, {"c": "╝", "d": "canto inf.dir. duplo"}, {"c": "╜", "d": "traco misto"}, {"c": "╛", "d": "traco misto"}, {"c": "┐", "d": "canto sup. direito"}, {"c": "└", "d": "canto inf. esquerdo"}, {"c": "┴", "d": "T p/ cima"}, {"c": "┬", "d": "T p/ baixo"}, {"c": "├", "d": "T p/ direita"}, {"c": "─", "d": "linha horizontal"}, {"c": "┼", "d": "cruz"}, {"c": "╞", "d": "T dir. dupla"}, {"c": "╟", "d": "traco misto"}, {"c": "╚", "d": "canto inf.esq. duplo"}, {"c": "╔", "d": "canto sup.esq. duplo"}, {"c": "╩", "d": "T cima dupla"}, {"c": "╦", "d": "T baixo dupla"}, {"c": "╠", "d": "T dir. dupla"}, {"c": "═", "d": "horizontal dupla"}, {"c": "╬", "d": "cruz dupla"}, {"c": "╧", "d": "traco misto"}, {"c": "╨", "d": "traco misto"}, {"c": "╤", "d": "traco misto"}, {"c": "╥", "d": "traco misto"}, {"c": "╙", "d": "traco misto"}, {"c": "╘", "d": "traco misto"}, {"c": "╒", "d": "traco misto"}, {"c": "╓", "d": "traco misto"}, {"c": "╫", "d": "traco misto"}, {"c": "╪", "d": "traco misto"}, {"c": "┘", "d": "canto inf. direito"}, {"c": "┌", "d": "canto sup. esquerdo"}, {"c": "█", "d": "bloco cheio"}, {"c": "▄", "d": "bloco baixo"}, {"c": "▌", "d": "bloco esquerda"}, {"c": "▐", "d": "bloco direita"}, {"c": "▀", "d": "bloco alto"}, {"c": "α", "d": "alfa"}, {"c": "ß", "d": "beta alema"}, {"c": "Γ", "d": "gama maiuscula"}, {"c": "π", "d": "pi"}, {"c": "Σ", "d": "sigma maiuscula"}, {"c": "σ", "d": "sigma"}, {"c": "µ", "d": "micro"}, {"c": "τ", "d": "tau"}, {"c": "Φ", "d": "fi maiuscula"}, {"c": "Θ", "d": "teta maiuscula"}, {"c": "Ω", "d": "omega"}, {"c": "δ", "d": "delta"}, {"c": "∞", "d": "infinito"}, {"c": "φ", "d": "fi"}, {"c": "ε", "d": "epsilon"}, {"c": "∩", "d": "intersecao"}, {"c": "≡", "d": "identico"}, {"c": "±", "d": "mais/menos"}, {"c": "≥", "d": "maior/igual"}, {"c": "≤", "d": "menor/igual"}, {"c": "⌠", "d": "integral sup."}, {"c": "⌡", "d": "integral inf."}, {"c": "÷", "d": "divisao"}, {"c": "≈", "d": "aprox."}, {"c": "°", "d": "grau"}, {"c": "∙", "d": "ponto pequeno"}, {"c": "•", "d": "ponto (bullet)"}, {"c": "√", "d": "raiz quadrada"}, {"c": "ⁿ", "d": "n sobrescrito"}, {"c": "²", "d": "ao quadrado"}, {"c": "■", "d": "quadrado preto"}];
-function layoutSimbolos() {
-  const linhas = SIMBOLOS.map((s, i) => ({
-    texto: (i + 1) + " '" + s.c + "' " + s.d,
-    alinhamento: 'esquerda'
-  }));
-  state.titulo = 'SIMBOLOS CP860 (1-' + SIMBOLOS.length + ')';
-  state.linhas = linhas;
-  document.getElementById('titulo').value = state.titulo;
-  render();
-  toast('Layout Símbolos montado — clique em Imprimir para testar');
-}
-
-// layoutTabela: os 127 símbolos numa grade estilo tabuleiro de xadrez —
-// primeira coluna = letra (linhas a..i), primeira linha = número (1..14),
-// 14 colunas de símbolos por linha. Bordas com caracteres de traço.
-function layoutTabela() {
-  const N = 14; // símbolos por linha
-  const linhas = [];
-  const sup = '┌' + '──┬'.repeat(N) + '──┐';
-  const sep = '├' + '──┼'.repeat(N) + '──┤';
-  const inf = '└' + '──┴'.repeat(N) + '──┘';
-  // cabeçalho: canto vazio + números 1..N
-  let cab = '│  ';
-  for (let n = 1; n <= N; n++) cab += '│' + (n < 10 ? n + ' ' : n);
-  cab += '│';
-  linhas.push({ texto: sup, alinhamento: 'centro' });
-  linhas.push({ texto: cab, alinhamento: 'centro' });
-  linhas.push({ texto: sep, alinhamento: 'centro' });
-  // linhas de símbolos rotuladas com letras maiúsculas (A, B, C, ...)
-  for (let i = 0; i < SIMBOLOS.length; i += N) {
-    const letra = String.fromCharCode(65 + Math.floor(i / N));
-    let linha = '│' + letra + ' ';
-    for (let j = 0; j < N; j++) {
-      const s = SIMBOLOS[i + j];
-      linha += '│' + (s ? s.c + ' ' : '  ');
-    }
-    linhas.push({ texto: linha + '│', alinhamento: 'centro' });
-  }
-  linhas.push({ texto: inf, alinhamento: 'centro' });
-  state.titulo = 'TABELA SIMBOLOS (' + SIMBOLOS.length + ')';
-  state.linhas = linhas;
-  document.getElementById('titulo').value = state.titulo;
-  render();
-  toast('Tabela montada — clique em Imprimir para testar');
+// copiarApi copia o payload JSON ou o curl gerados no construtor de API.
+function copiarApi(which) {
+  const el = document.getElementById(which === 'json' ? 'api-json' : 'api-curl');
+  copiarTexto(el.textContent, which === 'json' ? 'Payload copiado' : 'curl copiado');
 }
 
 function applyLayout(name) {
@@ -909,7 +845,6 @@ async function checkHealth() {
 
 addLine();
 render();
-renderSimbolosRef();
 checkHealth();
 setInterval(checkHealth, 5000);
 
