@@ -22,10 +22,19 @@ jobs:
         run: go test ./...
 
       - name: Cross-compile (static linux/amd64)
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/elgin-print .
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/elgin-print-linux-amd64 .
 
-      - name: Upload artifact
+      - name: Cross-compile (windows/amd64)
+        run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/elgin-print-windows-amd64.exe .
+
+      - name: Upload artifact (linux/amd64)
         uses: actions/upload-artifact@v4
         with:
           name: elgin-print-linux-amd64
-          path: dist/elgin-print
+          path: dist/elgin-print-linux-amd64
+
+      - name: Upload artifact (windows/amd64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: elgin-print-windows-amd64
+          path: dist/elgin-print-windows-amd64.exe
