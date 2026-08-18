@@ -4,7 +4,7 @@ Serviço de impressão para a **impressora térmica Elgin I9** (ESC/POS via USB)
 
 - **Binário `elgin-print`**: substitui a antiga CLI bash + API FastAPI (um arquivo, zero dependências no destino).
 - **CLI**: subcomandos `print`, `serve`, `feed`, `cut`.
-- **API REST**: mantém os endpoints antigos (`GET /`, `GET /health`, `POST /test`, `POST /print`) + novos (`POST /feed`, `POST /cut`).
+- **API REST**: mantém os endpoints antigos (`GET /`, `GET /health`, `POST /test`, `POST /print`) + novos (`POST /feed`, `POST /cut`, `GET /qr`).
 - **Web UI**: editor visual de cupom embutido no binário (`embed.FS`), em `http://<vm>:8000/`.
 - **📚 Documentação técnica completa**: [`docs/impressora-elgin-i9.md`](docs/impressora-elgin-i9.md) — comandos ESC/POS, a saga do corte, feed físico, DIP switches, beep e pitfalls.
 
@@ -37,7 +37,8 @@ go build -trimpath -ldflags "-s -w" -o elgin-print.exe .
 go vet ./... && go test ./...
 ```
 
-Há um CI (`.github/workflows/build.yml`) que roda `go vet`, `go test` e gera o binário a cada push/PR.
+Há um CI (`.github/workflows/build.yml`) que roda `go vet`, `go test` e gera o binário a cada push/PR,
+e outro (`.github/workflows/build-binaries.yml`) que gera os binários **Linux e Windows** em PRs.
 
 ### Observações
 
@@ -105,15 +106,49 @@ curl -X POST http://<host>:8000/print \
 - `negrito` — `true`/`false`
 - `linha` — `true` repete o `texto` até preencher a linha (ex: `"-X"` vira `-X-X-X-X-...`)
 
+**Blocos gráficos** (novo — imagem e QR code):
+
+- `tipo` — `texto` (padrão/ausente) | `imagem` | `qr`
+- `imagem` — base64 (PNG/JPEG/GIF, com ou sem prefixo `data:`); a imagem é convertida para 1-bit
+  (dither Floyd-Steinberg) e ajustada à largura do papel (576 dots) mantendo a proporção
+- `qr` — conteúdo do QR (URL/texto); gerado no servidor e impresso como imagem (fallback `GS v 0`,
+  não depende do suporte a `GS ( k`)
+- `qr_tamanho` — tamanho do módulo do QR `1..8` (padrão `4`); se não couber em 576 dots, o módulo é reduzido
+
+Exemplo com imagem e QR:
+
+```bash
+curl -X POST http://<host>:8000/print \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "titulo": "CUPOM DIGITAL",
+    "linhas": [
+      {"texto": "Pague via PIX:", "alinhamento": "centro"},
+      {"tipo": "qr", "qr": "https://exemplo.com/pix", "qr_tamanho": 4},
+      {"tipo": "imagem", "imagem": "data:image/png;base64,iVBORw0KGgo..."}
+    ]
+  }'
+```
+
+Também há o endpoint `GET /qr?text=...&tamanho=1..8` que renderiza um QR como PNG
+(sem imprimir) — útil para conferir antes de mandar para o papel.
+
 ## Web UI
 
 Abra `http://<vm>:8000/` no navegador. Oferece:
 
 - **Editor de cupom** (título + linhas com alinhamento/fonte/negrito/linha) e pré-visualização 48 colunas com **marcador do corte** (tesoura).
 - **Blocos de lista** (bullet/checkbox) — cada item vira uma linha com marcador na impressão.
+- **Blocos de imagem** (upload de arquivo ou Ctrl+V) e **QR code** (a partir de texto/URL, com tamanho de módulo 1–8) — ambos com preview.
 - Botões **Imprimir** / **Feed N linhas** / **Corte** / **Ping**.
 - **Layouts prontos** (teste, pedido, etiqueta, moldura).
 - **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
+
+![Web UI: construtor de cupom com blocos de imagem e QR code](docs/screenshots/webui-construtor-blocos-imagem-qr.png)
+
+Exemplo impresso na Elgin i9 (logo 1-bit dithered + QR code lido de primeira):
+
+![Cupom impresso: logo + QR code](docs/screenshots/cupom-impresso-imagem-qr.png)
 
 ## Detecção da impressora (Linux)
 

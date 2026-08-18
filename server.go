@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,6 +29,7 @@ func cmdServe() {
 	mux.HandleFunc("/print", handlePrint)
 	mux.HandleFunc("/feed", handleFeed)
 	mux.HandleFunc("/cut", handleCut)
+	mux.HandleFunc("/qr", handleQR)
 
 	addr := "0.0.0.0:" + port
 	log.Printf("elgin-print serve em http://%s (device %s)", addr, LP)
@@ -94,7 +96,12 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 // responde "pong" no corpo (texto puro, sem JSON). Sai SEM o modo compacto:
 // o respiro antes do corte destaca o cupom de teste.
 func handlePing(w http.ResponseWriter, r *http.Request) {
-	if err := enviar(montarCupom("", []Linha{{Texto: "pong", Alinhamento: "centro"}}), true, feedCortePadrao); err != nil {
+	dados, err := montarCupom("", []Linha{{Texto: "pong", Alinhamento: "centro"}})
+	if err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	if err := enviar(dados, true, feedCortePadrao); err != nil {
 		writeErr(w, 503, err.Error())
 		return
 	}
@@ -126,7 +133,13 @@ func handlePrint(w http.ResponseWriter, r *http.Request) {
 	if cupom.Compact != nil && !*cupom.Compact {
 		feedCorte = feedCortePadrao
 	}
-	if err := enviar(montarCupom(titulo, cupom.Linhas), true, feedCorte); err != nil {
+	dados, err := montarCupom(titulo, cupom.Linhas)
+	if err != nil {
+		// erro de conteúdo (imagem/QR inválidos) é 400, não falha do device
+		writeErr(w, 400, err.Error())
+		return
+	}
+	if err := enviar(dados, true, feedCorte); err != nil {
 		writeErr(w, 503, err.Error())
 		return
 	}
@@ -166,6 +179,32 @@ func handleCut(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
+// handleQR renderiza um QR code como PNG (sem imprimir) — usado pelo preview
+// da Web UI e útil para testar a geração via curl. Parâmetros: text
+// (obrigatório) e tamanho (módulo 1..8, padrão 4). Usa o mesmo gerador da
+// impressão, então o preview bate com o papel.
+func handleQR(w http.ResponseWriter, r *http.Request) {
+	text := r.URL.Query().Get("text")
+	if strings.TrimSpace(text) == "" {
+		writeErr(w, 400, "parâmetro 'text' obrigatório")
+		return
+	}
+	mod := qrModPadrao
+	if v := r.URL.Query().Get("tamanho"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 && n <= 8 {
+			mod = n
+		}
+	}
+	png, err := qrPNG(text, mod)
+	if err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(png)
+}
+
 func apiDocs() map[string]any {
 	return map[string]any{
 		"servico": "Elgin I9 Print API",
@@ -177,6 +216,7 @@ func apiDocs() map[string]any {
 			"POST /print": "imprime cupom personalizado (corpo JSON)",
 			"POST /feed":  "avança papel (corpo {\"linhas\": N})",
 			"POST /cut":   "aciona a guilhotina",
+			"GET /qr":     "renderiza um QR como PNG (sem imprimir) — ?text=...&tamanho=1..8",
 		},
 		"alinhamentos": map[string]string{
 			"esquerda": "texto colado na margem esquerda",
@@ -187,6 +227,21 @@ func apiDocs() map[string]any {
 			"normal": "Fonte A 12x24 - 48 colunas por linha (padrão)",
 			"larga":  "largura 2x - 24 colunas por linha (bom para títulos)",
 		},
+		"tipos_de_linha": map[string]string{
+			"texto":  "padrão (tipo ausente = texto) - campos texto/alinhamento/fonte/negrito/linha",
+			"imagem": "imprime uma imagem (campo 'imagem': base64 PNG/JPEG/GIF, com ou sem prefixo data:)",
+			"qr":     "gera um QR code do campo 'qr' (texto/URL) e imprime como imagem (fallback GS v 0)",
+		},
+		"imagem": map[string]string{
+			"campo":         "imagem",
+			"como_funciona": "a imagem é convertida para 1-bit (dither Floyd-Steinberg), reduzida para no máximo 576 dots de largura (80mm) mantendo a proporção e impressa via GS v 0",
+			"alinhamento":   "esquerda | centro (padrão) | direita - respeitado com respiro em branco até a largura do papel",
+		},
+		"qr_code": map[string]any{
+			"campos":        map[string]string{"qr": "conteúdo (URL/texto)", "qr_tamanho": "tamanho do módulo 1..8 (padrão 4)"},
+			"como_funciona": "QR gerado no servidor (correção M) e impresso como imagem GS v 0 (fallback — não depende do suporte a GS ( k da i9). Se não couber em 576 dots, o módulo é reduzido automaticamente",
+			"exemplo":       map[string]any{"tipo": "qr", "qr": "https://exemplo.com", "qr_tamanho": 4},
+		},
 		"preenchimento_de_linha": map[string]any{
 			"campo":         "linha",
 			"como_funciona": "com linha=true, o campo texto é repetido até preencher a linha inteira (48 colunas na fonte normal, 24 na larga)",
@@ -194,7 +249,7 @@ func apiDocs() map[string]any {
 			"resultado":     preencher("-X", WidthNormal),
 		},
 		"quebra_de_linha": "textos maiores que a largura da linha (48 normal / 24 larga) são quebrados automaticamente em várias linhas — nada é truncado",
-		"compact": "campo compact (bool) no POST /print: true/ausente = corte rente à última linha (modo compacto, padrão); false = respiro de 3 linhas antes do corte",
+		"compact":         "campo compact (bool) no POST /print: true/ausente = corte rente à última linha (modo compacto, padrão); false = respiro de 3 linhas antes do corte",
 		"exemplo_completo": map[string]any{
 			"titulo": "PEDIDO #123",
 			"linhas": []map[string]any{

@@ -139,7 +139,11 @@ func cmdPrint(args []string) {
 		linhas = append(linhas, Linha{Texto: it.text, Alinhamento: al})
 	}
 
-	if err := enviar(montarCupom(titulo, linhas), true, feedCorte); err != nil {
+	dados, err := montarCupom(titulo, linhas)
+	if err != nil {
+		fatal(err.Error())
+	}
+	if err := enviar(dados, true, feedCorte); err != nil {
 		fatal(err.Error())
 	}
 	fmt.Printf("OK - %d linha(s) impressa(s)!\n", len(linhas))

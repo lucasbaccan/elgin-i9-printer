@@ -146,6 +146,14 @@
   }
   .list-add button:hover { background: #f0f2f5; color: var(--accent); }
   .list-chk { flex: none; }
+  /* blocos gráficos (imagem/QR) no editor e no preview */
+  .img-block { display: block; width: min(100%, 48ch); margin: 3px auto; text-align: center; }
+  .img-block img { max-width: 100%; height: auto; }
+  .img-block img.qr { image-rendering: pixelated; }
+  .img-block.img-placeholder { color: var(--muted); font-size: 11px; border: 1px dashed var(--border); border-radius: 6px; padding: 8px; }
+  .line-row .img-thumb { display: block; max-width: 130px; max-height: 80px; margin: 2px auto 4px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+  .line-row .img-thumb.img-empty { display: block; color: var(--muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; }
+  .line-row .qr-field { flex: 1; min-width: 0; }
   .preview {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 11px;
@@ -373,6 +381,8 @@
         <div style="display:flex; flex-wrap:wrap; gap:8px">
           <button onclick="addLine()" style="flex:1; min-width:0" title="Adicionar uma linha de texto simples"><i class="fa fa-plus"></i> Linha de texto</button>
           <button onclick="addLista()" style="flex:1; min-width:0" title="Adicionar um bloco de lista: cada item vira um bullet • ou checkbox [ ] na impressão"><i class="fa fa-list-ul"></i> Lista (bullet/checkbox)</button>
+          <button onclick="addImagem()" style="flex:1; min-width:0" title="Adicionar uma imagem ao cupom (logo, foto) — convertida para 1-bit e ajustada à largura do papel">🖼️ Imagem</button>
+          <button onclick="addQr()" style="flex:1; min-width:0" title="Adicionar um QR code a partir de um texto/URL, impresso como imagem (legível por scanner)">🔳 QR code</button>
         </div>
       </div>
 
@@ -403,6 +413,9 @@
   </div>
 </div>
 
+<input type="file" id="imgInput" accept="image/*" style="display:none"
+       onchange="if(this.files && this.files[0]){ onImagemFile(this.files[0]); this.value=''; }">
+
 <div class="toast" id="toast"></div>
 
 <div class="modal-overlay" id="helpModal" onclick="if(event.target===this)toggleHelp()">
@@ -418,6 +431,7 @@
       <tr><td><code>POST /feed</code></td><td>avança papel — corpo <code>{"linhas": N}</code></td></tr>
       <tr><td><code>POST /cut</code></td><td>aciona a guilhotina</td></tr>
       <tr><td><code>GET /ping</code></td><td>imprime "pong" (com respiro de 3 linhas)</td></tr>
+      <tr><td><code>GET /qr</code></td><td>gera um QR como PNG (sem imprimir) — <code>?text=…&amp;tamanho=1..8</code></td></tr>
     </table>
 
     <h3>Campos de cada linha do <code>/print</code></h3>
@@ -428,12 +442,18 @@
       <tr><td><code>fonte</code></td><td><code>normal</code> | <code>larga</code> (2x, títulos)</td></tr>
       <tr><td><code>negrito</code></td><td><code>true</code>/<code>false</code></td></tr>
       <tr><td><code>linha</code></td><td><code>true</code> repete o texto até o fim (moldura)</td></tr>
+      <tr><td><code>tipo</code></td><td><code>texto</code> (padrão) | <code>imagem</code> | <code>qr</code></td></tr>
+      <tr><td><code>imagem</code></td><td>base64 (PNG/JPEG/GIF, com ou sem prefixo <code>data:</code>) — só para <code>tipo=imagem</code></td></tr>
+      <tr><td><code>qr</code></td><td>conteúdo do QR (URL/texto) — só para <code>tipo=qr</code></td></tr>
+      <tr><td><code>qr_tamanho</code></td><td>módulo do QR <code>1..8</code> (padrão 4) — só para <code>tipo=qr</code></td></tr>
       <tr><td><code>compact</code></td><td>global: <code>true</code>/ausente = corte rente; <code>false</code> = respiro de 3 linhas</td></tr>
     </table>
 
     <h3>Dicas</h3>
     <ul>
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
+      <li>Para adicionar uma imagem, use o botão <b>🖼️ Imagem</b> (escolhe arquivo) ou <b>Ctrl+V</b> com uma imagem na área de transferência.</li>
+      <li>Imagem e QR são convertidos para 1-bit (dither) e ajustados à largura do papel (576 dots); QR maior que o papel reduz o módulo automaticamente.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
       <li>Emojis e a faixa baixa (☺♥♦♣♠) <b>não existem</b> na fonte da i9 — viram <code>?</code>.</li>
       <li><b>Impressora</b>: Linux detecta a Elgin por USB ID (20d1:7008); Windows usa a fila padrão ou <code>ELGIN_LP</code>.</li>
@@ -537,6 +557,15 @@ function renderPreview() {
     }
   }
   for (const l of expandLinhas()) {
+    if (l.tipo === 'imagem') {
+      out.push('<div class="img-block"><img src="' + l.imagem + '" alt="imagem do cupom"></div>');
+      continue;
+    }
+    if (l.tipo === 'qr') {
+      const src = '/qr?text=' + encodeURIComponent(l.qr) + '&tamanho=' + (l.qr_tamanho || 4);
+      out.push('<div class="img-block"><img class="qr" src="' + src + '" alt="QR code"></div>');
+      continue;
+    }
     let cls = '';
     if (l.negrito) cls += ' bold';
     if (l.fonte === 'larga') cls += ' large';
@@ -599,6 +628,31 @@ function renderLines() {
           '<button class="rm" title="Remover bloco de lista" onclick="removeLine(' + i + ')"><i class="fa fa-xmark"></i></button>' +
         '</div>';
       row.innerHTML = html;
+    } else if (l.tipo === 'imagem') {
+      row.className = 'line-row';
+      row.innerHTML =
+        (l.imagem
+          ? '<img class="img-thumb" src="' + l.imagem + '" alt="imagem do cupom">'
+          : '<span class="img-thumb img-empty">nenhuma imagem</span>') +
+        '<div class="line-configs">' +
+          '<span class="drag-handle" title="Arrastar para reordenar o bloco"><i class="fa fa-grip-vertical"></i></span>' +
+          '<button class="icon-btn" title="Escolher outra imagem" onclick="pickImagem(' + i + ')">🖼️ trocar</button>' +
+          '<button class="rm" title="Remover bloco de imagem" onclick="removeLine(' + i + ')"><i class="fa fa-xmark"></i></button>' +
+        '</div>';
+    } else if (l.tipo === 'qr') {
+      row.className = 'line-row';
+      row.innerHTML =
+        '<input type="text" id="qr-' + i + '" value="' + lineEscape(l.qr || '') + '" placeholder="Conteúdo do QR (URL ou texto livre)" ' +
+          'oninput="state.linhas[' + i + '].qr=this.value; render()">' +
+        '<div class="line-configs">' +
+          '<span class="drag-handle" title="Arrastar para reordenar o bloco"><i class="fa fa-grip-vertical"></i></span>' +
+          '<label class="chk">módulo ' +
+            '<select title="Tamanho do módulo do QR (1 a 8) — maior = mais legível e ocupa mais papel" onchange="setQrTamanho(' + i + ',this.value)">' +
+              [1,2,3,4,5,6,7,8].map(n => opt(String(n), String(l.qr_tamanho || 4))).join('') +
+            '</select>' +
+          '</label>' +
+          '<button class="rm" title="Remover bloco de QR" onclick="removeLine(' + i + ')"><i class="fa fa-xmark"></i></button>' +
+        '</div>';
     } else {
       row.className = 'line-row';
       row.innerHTML =
@@ -639,14 +693,7 @@ function renderApi() {
   if (state.titulo) payload.titulo = state.titulo;
   // compact sempre visível no construtor (true/false conforme o checkbox)
   payload.compact = document.getElementById('compactChk').checked;
-  payload.linhas = expandLinhas().map(l => {
-    const o = { texto: l.texto };
-    if (l.alinhamento !== 'centro') o.alinhamento = l.alinhamento;
-    if (l.fonte !== 'normal') o.fonte = l.fonte;
-    if (l.negrito) o.negrito = true;
-    if (l.linha) o.linha = true;
-    return o;
-  });
+  payload.linhas = expandLinhas().map(linhaParaPayload);
   const json = JSON.stringify(payload, null, 2);
   document.getElementById('api-json').textContent = json;
 
@@ -660,7 +707,8 @@ function renderApi() {
 
 // expandLinhas transforma os blocos do editor em linhas imprimíveis:
 // bloco texto -> a própria linha; bloco lista -> uma linha por item com o
-// marcador (• ou [ ]/[x]). Itens vazios são ignorados.
+// marcador (• ou [ ]/[x]); blocos imagem/qr passam direto (só se preenchidos
+// — bloco vazio não vai para o payload). Itens vazios são ignorados.
 function expandLinhas() {
   const out = [];
   for (const l of state.linhas) {
@@ -674,6 +722,10 @@ function expandLinhas() {
           alinhamento: 'esquerda'
         });
       }
+    } else if (l.tipo === 'imagem') {
+      if (l.imagem) out.push(l);
+    } else if (l.tipo === 'qr') {
+      if ((l.qr || '').trim()) out.push(l);
     } else {
       out.push(l);
     }
@@ -681,7 +733,67 @@ function expandLinhas() {
   return out;
 }
 
+// linhaParaPayload converte um bloco (texto/imagem/qr) no JSON do POST /print.
+function linhaParaPayload(l) {
+  if (l.tipo === 'imagem') {
+    return { tipo: 'imagem', imagem: l.imagem };
+  }
+  if (l.tipo === 'qr') {
+    const o = { tipo: 'qr', qr: l.qr };
+    if (l.qr_tamanho && l.qr_tamanho !== 4) o.qr_tamanho = l.qr_tamanho;
+    return o;
+  }
+  const o = { texto: l.texto };
+  if (l.alinhamento !== 'centro') o.alinhamento = l.alinhamento;
+  if (l.fonte !== 'normal') o.fonte = l.fonte;
+  if (l.negrito) o.negrito = true;
+  if (l.linha) o.linha = true;
+  return o;
+}
+
 function render() { renderLines(); renderPreview(); renderApi(); }
+
+// pickTarget guarda o índice do bloco de imagem sendo substituído (null = novo).
+let pickTarget = null;
+
+function addImagem() {
+  pickTarget = null;
+  document.getElementById('imgInput').click();
+}
+
+function pickImagem(i) {
+  pickTarget = i;
+  document.getElementById('imgInput').click();
+}
+
+// onImagemFile lê o arquivo como data URL (base64) e atualiza o bloco/push.
+function onImagemFile(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const dataURL = r.result;
+    if (typeof pickTarget === 'number' && state.linhas[pickTarget]) {
+      state.linhas[pickTarget].imagem = dataURL;
+    } else {
+      state.linhas.push({ tipo: 'imagem', imagem: dataURL });
+    }
+    pickTarget = null;
+    render();
+  };
+  r.readAsDataURL(file);
+}
+
+function addQr() {
+  state.linhas.push({ tipo: 'qr', qr: '', qr_tamanho: 4 });
+  render();
+  const el = document.getElementById('qr-' + (state.linhas.length - 1));
+  if (el) el.focus();
+}
+
+function setQrTamanho(i, v) {
+  state.linhas[i].qr_tamanho = parseInt(v, 10) || 4;
+  render();
+}
 
 function addLine() {
   state.linhas.push({ texto: '', alinhamento: 'centro', fonte: 'normal', negrito: false, linha: false });
@@ -803,7 +915,7 @@ async function doPrint() {
   // nada para imprimir (sem linhas de texto e sem itens de lista preenchidos):
   // não faz nada (nem toast, nem requisição)
   if (linhas.length === 0) return;
-  const payload = { linhas };
+  const payload = { linhas: linhas.map(linhaParaPayload) };
   if (state.titulo) payload.titulo = state.titulo;
   if (!document.getElementById('compactChk').checked) payload.compact = false;
   setBusy(true);
@@ -858,6 +970,19 @@ addLine();
 render();
 checkHealth();
 setInterval(checkHealth, 5000);
+
+// colar imagem (Ctrl+V) adiciona/atualiza um bloco de imagem automaticamente
+document.addEventListener('paste', function(e) {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const it of items) {
+    if (it.type && it.type.indexOf('image/') === 0) {
+      const f = it.getAsFile();
+      if (f) onImagemFile(f);
+      break;
+    }
+  }
+});
 
 // reordenação por drag & drop (SortableJS, arrastar pelo handle ⠿)
 new Sortable(document.getElementById('lines'), {

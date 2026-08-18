@@ -16,16 +16,16 @@ const (
 // Comandos ESC/POS da i9 guardados como bytes crus. Ao contrário do bash,
 // o Go não trunca NUL (\x00), então não há os hacks de printf %b.
 var (
-	initCmd     = []byte("\x1b\x40")     // ESC @        inicializa
-	codepageCmd = []byte("\x1b\x74\x03") // ESC t 3      ativa a tabela com acentos/símbolos PT (PC860); ESC t 2 é IGNORADO pela i9 (fica em CP437/850: ã→ä, õ→ö, √→¹)
-	fontA       = []byte("\x1b\x4d\x00") // ESC M 0      Fonte A 12x24 (48 colunas)
-	largeOn     = []byte("\x1d\x21\x10") // GS ! 16      largura 2x
-	largeOff    = []byte("\x1d\x21\x00") // GS ! 0       largura normal
-	boldOn      = []byte("\x1b\x45\x01") // ESC E 1      negrito ligado
-	boldOff     = []byte("\x1b\x45\x00") // ESC E 0      negrito desligado
-	alignLeft   = []byte("\x1b\x61\x00") // ESC a 0
-	alignCenter = []byte("\x1b\x61\x01") // ESC a 1
-	alignRight  = []byte("\x1b\x61\x02") // ESC a 2
+	initCmd     = []byte("\x1b\x40")         // ESC @        inicializa
+	codepageCmd = []byte("\x1b\x74\x03")     // ESC t 3      ativa a tabela com acentos/símbolos PT (PC860); ESC t 2 é IGNORADO pela i9 (fica em CP437/850: ã→ä, õ→ö, √→¹)
+	fontA       = []byte("\x1b\x4d\x00")     // ESC M 0      Fonte A 12x24 (48 colunas)
+	largeOn     = []byte("\x1d\x21\x10")     // GS ! 16      largura 2x
+	largeOff    = []byte("\x1d\x21\x00")     // GS ! 0       largura normal
+	boldOn      = []byte("\x1b\x45\x01")     // ESC E 1      negrito ligado
+	boldOff     = []byte("\x1b\x45\x00")     // ESC E 0      negrito desligado
+	alignLeft   = []byte("\x1b\x61\x00")     // ESC a 0
+	alignCenter = []byte("\x1b\x61\x01")     // ESC a 1
+	alignRight  = []byte("\x1b\x61\x02")     // ESC a 2
 	cutCmd      = []byte("\x1d\x56\x42\x00") // GS V 66 0  corte rente à última linha
 	feedCmd     = []byte("\x1b\x64")         // ESC d n     avança n linhas
 )
@@ -73,13 +73,20 @@ func encodeTexto(s string) []byte {
 }
 
 // Linha representa uma linha do cupom. JSON compatível com a API antiga
-// (FastAPI): texto, alinhamento, fonte, negrito, linha.
+// (FastAPI): texto, alinhamento, fonte, negrito, linha — e os novos blocos
+// gráficos (imagem e QR) discriminados por `tipo`.
 type Linha struct {
 	Texto       string `json:"texto"`
 	Alinhamento string `json:"alinhamento"` // esquerda | centro | direita
 	Fonte       string `json:"fonte"`       // normal | larga
 	Negrito     bool   `json:"negrito"`
 	Linha       bool   `json:"linha"` // true = repete o texto até preencher a linha (antigo "padrao")
+
+	// Novos blocos (gh#7). Tipo vazio/ausente = texto (compatível com a API antiga).
+	Tipo      string `json:"tipo"`       // "" | "texto" | "imagem" | "qr"
+	Imagem    string `json:"imagem"`     // base64 (ou data URL) para tipo=imagem
+	Qr        string `json:"qr"`         // conteúdo do QR (texto/URL) para tipo=qr
+	QrTamanho int    `json:"qr_tamanho"` // tamanho do módulo do QR (1..8; padrão 4)
 }
 
 // Cupom é o payload de POST /print (compatível com a API antiga).
@@ -88,9 +95,9 @@ type Linha struct {
 // compact (bool): true/ausente = corte rente à última linha (modo compacto,
 // padrão); false = respiro de feedCortePadrao linhas antes do corte.
 type Cupom struct {
-	Titulo *string `json:"titulo"`
-	Linhas []Linha `json:"linhas"`
-	Compact *bool  `json:"compact"`
+	Titulo  *string `json:"titulo"`
+	Linhas  []Linha `json:"linhas"`
+	Compact *bool   `json:"compact"`
 }
 
 // feedCortePadrao é o respiro (linhas em branco) antes do corte quando
@@ -163,7 +170,9 @@ func wrapTexto(texto string, limite int) []string {
 // write separado (ver enviar) porque a i9 o executa imediatamente ao receber.
 // Sem moldura automática: o cupom é título + linhas; moldura = linha "="
 // com linha=true (é só uma linha repetida).
-func montarCupom(titulo string, linhas []Linha) []byte {
+// Blocos gráficos (tipo imagem/qr) podem falhar na decodificação — o erro
+// volta para o chamador (400 no /print).
+func montarCupom(titulo string, linhas []Linha) ([]byte, error) {
 	var buf bytes.Buffer
 	buf.Write(initCmd)
 	buf.Write(codepageCmd) // PC860 (portuguesa): acentos + símbolos da faixa alta
@@ -182,41 +191,79 @@ func montarCupom(titulo string, linhas []Linha) []byte {
 	}
 
 	for _, l := range linhas {
-		larga := l.Fonte == "larga"
-		limite := WidthNormal
-		if larga {
-			limite = WidthLarge
-		}
-		texto := l.Texto
-		if l.Linha {
-			texto = preencher(l.Texto, limite)
-		}
-		pedacos := wrapTexto(texto, limite)
-		for _, p := range pedacos {
-			if strings.TrimSpace(p) == "" {
-				// a i9 NÃO avança papel em linha 100% vazia (feed colapsa):
-				// manda um espaço invisível para forçar a impressão/avanço.
-				p = " "
+		switch l.Tipo {
+		case "imagem":
+			data, err := montarImagem(l)
+			if err != nil {
+				return nil, err
 			}
-			if larga {
-				buf.Write(largeOn)
+			buf.Write(data)
+		case "qr":
+			data, err := montarQR(l)
+			if err != nil {
+				return nil, err
 			}
-			if l.Negrito {
-				buf.Write(boldOn)
-			}
-			buf.Write(alignFor(l.Alinhamento))
-			buf.Write(encodeTexto(p))
-			buf.WriteByte('\n')
-			if l.Negrito {
-				buf.Write(boldOff)
-			}
-			if larga {
-				buf.Write(largeOff)
-			}
+			buf.Write(data)
+		default: // texto (tipo vazio/ausente = compatível com a API antiga)
+			montarLinhaTexto(&buf, l)
 		}
 	}
 
-	return buf.Bytes()
+	return buf.Bytes(), nil
+}
+
+// montarImagem decodifica e serializa um bloco de imagem (GS v 0).
+func montarImagem(l Linha) ([]byte, error) {
+	if strings.TrimSpace(l.Imagem) == "" {
+		return nil, fmt.Errorf("bloco imagem: campo 'imagem' vazio")
+	}
+	img, err := decodeImagem(l.Imagem)
+	if err != nil {
+		return nil, err
+	}
+	return imagemParaGSv0(img, l.Alinhamento)
+}
+
+// montarQR gera e serializa um bloco de QR code (GS v 0, fallback por imagem).
+func montarQR(l Linha) ([]byte, error) {
+	return qrParaGSv0(l.Qr, l.QrTamanho, l.Alinhamento)
+}
+
+// montarLinhaTexto escreve uma linha de texto no buffer (largura, negrito,
+// alinhamento, quebra e preenchimento) — a lógica original de montarCupom.
+func montarLinhaTexto(buf *bytes.Buffer, l Linha) {
+	larga := l.Fonte == "larga"
+	limite := WidthNormal
+	if larga {
+		limite = WidthLarge
+	}
+	texto := l.Texto
+	if l.Linha {
+		texto = preencher(l.Texto, limite)
+	}
+	pedacos := wrapTexto(texto, limite)
+	for _, p := range pedacos {
+		if strings.TrimSpace(p) == "" {
+			// a i9 NÃO avança papel em linha 100% vazia (feed colapsa):
+			// manda um espaço invisível para forçar a impressão/avanço.
+			p = " "
+		}
+		if larga {
+			buf.Write(largeOn)
+		}
+		if l.Negrito {
+			buf.Write(boldOn)
+		}
+		buf.Write(alignFor(l.Alinhamento))
+		buf.Write(encodeTexto(p))
+		buf.WriteByte('\n')
+		if l.Negrito {
+			buf.Write(boldOff)
+		}
+		if larga {
+			buf.Write(largeOff)
+		}
+	}
 }
 
 // cutDelayBytes calcula o delay antes do corte: max(1.5s, linhas * 0.2s).
@@ -247,7 +294,7 @@ func cutBytes() []byte {
 func cupomTeste() []byte {
 	titulo := "CUPOM DE TESTE"
 	// moldura = linha "=" com linha=true (não há moldura automática)
-	return montarCupom(titulo, []Linha{
+	out, err := montarCupom(titulo, []Linha{
 		{Texto: "=", Alinhamento: "esquerda", Linha: true},
 		{Texto: "Acentos: ç ã é ô õ à", Alinhamento: "esquerda"},
 		{Texto: "Símbolos: √ ≈ ≤ ≥ ∞ Ω π µ", Alinhamento: "esquerda"},
@@ -259,6 +306,11 @@ func cupomTeste() []byte {
 		{Texto: "Fonte larga + negrito", Alinhamento: "centro", Fonte: "larga", Negrito: true},
 		{Texto: "=", Alinhamento: "esquerda", Linha: true},
 	})
+	if err != nil {
+		// impossível: o cupom de teste só tem linhas de texto
+		panic(err)
+	}
+	return out
 }
 
 // lineDelay é o intervalo entre linhas ao enviar. A i9 tem buffer interno

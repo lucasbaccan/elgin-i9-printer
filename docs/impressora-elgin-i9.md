@@ -157,12 +157,48 @@ substituiu a CLI bash + API FastAPI. Subcomandos: `print`, `serve` (API + Web UI
   separado com delay, linha vazia → `" "`, moldura 48 colunas, título 2x, `ESC @` no início)
   estão portados em `montarCupom`/`enviar` no código Go — nada foi redescoberto.
 - **Endpoints**: `GET /` (Web UI no navegador / docs JSON via curl), `GET /health`,
-  `POST /test`, `POST /print`, `POST /feed`, `POST /cut`. JSON compatível com a API antiga
-  (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, linha}]`).
+  `POST /test`, `POST /print`, `POST /feed`, `POST /cut`, `GET /qr` (QR como PNG, sem
+  imprimir). JSON compatível com a API antiga
+  (`titulo` + `linhas[{texto, alinhamento, fonte, negrito, linha}]`), com blocos gráficos
+  novos (`linhas[{tipo: "imagem"|"qr", ...}]`).
 - **Env**: `ELGIN_LP` (default `/dev/usb/lp0`), `ELGIN_API_PORT` (default `8000`).
 - **Deploy**: copiar o binário + serviços prontos em `deploy/` (`elgin-print.initd`
   p/ OpenRC, `elgin-print.service` p/ systemd) + regra udev `deploy/50-elgin-i9.rules`.
   Guia de VM dedicada: `deploy/alpine-vm.md`.
+
+## Impressão gráfica (imagem e QR code)
+
+Além de texto, o cupom aceita dois blocos gráficos — **imagem** (foto/logo) e
+**QR code** — discriminados pelo campo `tipo` de cada linha.
+
+### Como funciona (raster GS v 0)
+
+Ambos são impressos como **bit image raster ESC/POS** (`GS v 0 m xL xH yL yH d...`,
+m=0, 8-dot single density):
+
+- A imagem/QR é convertida para **1-bit** (preto/branco) com dither
+  **Floyd-Steinberg** — muito melhor que um threshold fixo em logos com bordas suaves.
+- **Largura limitada a 576 dots** (80mm @ 203dpi): a imagem é reduzida com média de
+  área (box average) mantendo a proporção; o QR reduz o tamanho do módulo.
+- Cada byte do raster = **8 dots horizontais** (bit 7 = dot mais à esquerda), linha a
+  linha de cima para baixo. O cabeçalho `xL/xH` fica em **bytes** (largura/8, arredondada
+  para cima) e `yL/yH` em **dots** (altura).
+- **Alinhamento** (esquerda/centro/direita) é respeitado preenchendo com branco até a
+  largura do papel.
+
+### QR code (fallback por imagem)
+
+O QR é **gerado no servidor** (correção de erro M) e impresso como imagem — o fallback
+que funciona em qualquer impressora ESC/POS, sem depender do suporte a `GS ( k` da i9
+(que não foi testado/confirmado). `qr_tamanho` (1..8, padrão 4) define o tamanho do
+módulo; se o QR não couber em 576 dots, o módulo é reduzido automaticamente. O endpoint
+`GET /qr?text=...&tamanho=N` renderiza o mesmo QR como PNG para conferência — o preview
+da Web UI usa exatamente esse endpoint, então o preview bate com o papel.
+
+### Formatos de imagem aceitos
+
+PNG, JPEG e GIF (primeiro frame), em base64 com ou sem prefixo `data:image/...;base64,`.
+Imagens com mais de 50 Mpx são recusadas (evita OOM).
 
 ## Recomendação de arquitetura
 

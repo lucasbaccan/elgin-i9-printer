@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -140,6 +141,43 @@ func TestPingEndpoint(t *testing.T) {
 	}
 }
 
+func TestPrintComBlocosGraficos(t *testing.T) {
+	var captured []byte
+	orig := enviar
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; return nil }
+	defer func() { enviar = orig }()
+
+	// QR + imagem no mesmo cupom: os dois viram raster GS v 0 no buffer.
+	raw := branca(40, 20)
+	b64 := base64.StdEncoding.EncodeToString(raw)
+	body := `{"titulo":"T","linhas":[{"tipo":"qr","qr":"https://exemplo.com"},{"tipo":"imagem","imagem":"` + b64 + `"}]}`
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/print", strings.NewReader(body))
+	handlePrint(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("print com blocos gráficos deveria retornar 200, veio %d (%s)", rec.Code, rec.Body.String())
+	}
+	// dois blocos gráficos = dois cabeçalhos GS v 0
+	if n := bytes.Count(captured, []byte{0x1d, 0x76, 0x30, 0x00}); n != 2 {
+		t.Fatalf("esperado 2 rasters GS v 0 (QR + imagem), veio %d", n)
+	}
+}
+
+func TestPrintImagemInvalidaRetorna400(t *testing.T) {
+	orig := enviar
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { return nil }
+	defer func() { enviar = orig }()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/print", strings.NewReader(`{"linhas":[{"tipo":"imagem","imagem":"!!!"}]}`))
+	handlePrint(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("imagem inválida deveria retornar 400, veio %d (%s)", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCutEndpoint(t *testing.T) {
 	var captured []byte
 	orig := enviar
@@ -178,6 +216,32 @@ func TestRootNegociacaoHTMLvsJSON(t *testing.T) {
 	}
 	if !strings.Contains(recHTML.Body.String(), "<html") {
 		t.Fatal("Web UI deveria conter markup HTML")
+	}
+}
+
+func TestQREndpoint(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/qr?text=https://exemplo.com&tamanho=4", nil)
+	handleQR(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("qr deveria retornar 200, veio %d (%s)", rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "image/png" {
+		t.Fatalf("qr deveria retornar image/png, veio %q", ct)
+	}
+	// PNG válido começa com a assinatura 89 50 4E 47
+	if len(rec.Body.Bytes()) < 8 || !bytes.HasPrefix(rec.Body.Bytes(), []byte{0x89, 0x50, 0x4e, 0x47}) {
+		t.Fatal("corpo do QR não é um PNG válido")
+	}
+}
+
+func TestQREndpointSemTexto(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/qr", nil)
+	handleQR(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("qr sem texto deveria retornar 400, veio %d", rec.Code)
 	}
 }
 
