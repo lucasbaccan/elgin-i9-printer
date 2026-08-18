@@ -10,7 +10,7 @@ import (
 )
 
 func TestMontarCupomInicializacao(t *testing.T) {
-	out := montarCupom("", nil)
+	out, _ := montarCupom("", nil)
 	// ESC @ + ESC t 3 (tabela PT da i9) + ESC M 0 (Fonte A)
 	want := []byte("\x1b\x40\x1b\x74\x03\x1b\x4d\x00")
 	if !bytes.HasPrefix(out, want) {
@@ -19,7 +19,7 @@ func TestMontarCupomInicializacao(t *testing.T) {
 }
 
 func TestMontarCupomTituloLargura2x(t *testing.T) {
-	out := montarCupom("PEDIDO #123", nil)
+	out, _ := montarCupom("PEDIDO #123", nil)
 	// largura 2x liga, título centralizado, largura normal volta
 	if !bytes.Contains(out, append(append([]byte{}, largeOn...), alignCenter...)) {
 		t.Fatal("título deveria usar GS ! 16 + centralizar")
@@ -35,7 +35,7 @@ func TestMontarCupomTituloLargura2x(t *testing.T) {
 
 func TestMontarCupomTituloQuebraEmLinhas(t *testing.T) {
 	longo := "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // 32 chars > 24 (larga)
-	out := montarCupom(longo, nil)
+	out, _ := montarCupom(longo, nil)
 	// título > 24 colunas QUEBRA em 2 linhas (24 + 8), não trunca
 	if bytes.Contains(out, []byte("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")) {
 		t.Fatal("título de 32 chars não deveria aparecer inteiro numa linha")
@@ -47,7 +47,7 @@ func TestMontarCupomTituloQuebraEmLinhas(t *testing.T) {
 
 func TestMontarCupomLinhaLongaQuebra(t *testing.T) {
 	longa := strings.Repeat("x", 100) // 100 chars > 48
-	out := montarCupom("", []Linha{{Texto: longa, Alinhamento: "esquerda"}})
+	out, _ := montarCupom("", []Linha{{Texto: longa, Alinhamento: "esquerda"}})
 	// 100 chars viram 3 linhas: 48 + 48 + 4 (alinhamento ESC a 0 entre elas)
 	if n := bytes.Count(out, []byte(strings.Repeat("x", 48))); n != 2 {
 		t.Fatalf("esperado 2 blocos de 48 x's (linhas 1 e 2), veio %d", n)
@@ -61,7 +61,7 @@ func TestMontarCupomLinhaLongaQuebra(t *testing.T) {
 }
 
 func TestMontarCupomLinhaVaziaViraEspaco(t *testing.T) {
-	out := montarCupom("", []Linha{{Texto: "", Alinhamento: "centro"}})
+	out, _ := montarCupom("", []Linha{{Texto: "", Alinhamento: "centro"}})
 	// a linha vazia deve virar um espaço invisível + \n (a i9 não avança linha 100% vazia)
 	if !bytes.Contains(out, []byte(" \n")) {
 		t.Fatalf("linha vazia deveria virar ' ' + \\n, saída: %q", out)
@@ -69,7 +69,7 @@ func TestMontarCupomLinhaVaziaViraEspaco(t *testing.T) {
 }
 
 func TestMontarCupomPadraoPreenche48(t *testing.T) {
-	out := montarCupom("", []Linha{{Texto: "-X-", Alinhamento: "esquerda", Linha: true}})
+	out, _ := montarCupom("", []Linha{{Texto: "-X-", Alinhamento: "esquerda", Linha: true}})
 	filled := preencher("-X-", WidthNormal)
 	if len([]rune(filled)) != WidthNormal {
 		t.Fatalf("preencher deveria gerar %d colunas, gerou %d", WidthNormal, len([]rune(filled)))
@@ -80,7 +80,7 @@ func TestMontarCupomPadraoPreenche48(t *testing.T) {
 }
 
 func TestMontarCupomNegrito(t *testing.T) {
-	out := montarCupom("", []Linha{{Texto: "NEGRITO", Alinhamento: "centro", Negrito: true}})
+	out, _ := montarCupom("", []Linha{{Texto: "NEGRITO", Alinhamento: "centro", Negrito: true}})
 	// Ordem real (igual ao Python): negrito liga -> alinhamento -> texto.
 	seq := append(append(append([]byte{}, boldOn...), alignCenter...), []byte("NEGRITO")...)
 	if !bytes.Contains(out, seq) {
@@ -99,17 +99,15 @@ func TestMontarCupomAlinhamentos(t *testing.T) {
 		"??":       alignCenter, // valor inválido cai em centro (padrão)
 	}
 	for al, cmd := range cases {
-		out := montarCupom("", []Linha{{Texto: "x", Alinhamento: al}})
+		out, _ := montarCupom("", []Linha{{Texto: "x", Alinhamento: al}})
 		if !bytes.Contains(out, append(append([]byte{}, cmd...), 'x')) {
 			t.Fatalf("alinhamento %q deveria usar %x antes do texto", al, cmd)
 		}
 	}
 }
 
-
-
 func TestMontarCupomNaoContemCorte(t *testing.T) {
-	out := montarCupom("T", []Linha{{Texto: "x"}})
+	out, _ := montarCupom("T", []Linha{{Texto: "x"}})
 	// o corte NUNCA vai no buffer do cupom — vai num write separado (enviar)
 	if bytes.Contains(out, cutCmd) {
 		t.Fatal("montarCupom não deve conter o comando de corte (GS V 66 0)")
@@ -182,7 +180,7 @@ func TestEnviarCorteEmWriteSeparado(t *testing.T) {
 	LP = f
 	defer func() { LP = origLP }()
 
-	dados := montarCupom("T", []Linha{{Texto: "conteudo"}})
+	dados, _ := montarCupom("T", []Linha{{Texto: "conteudo"}})
 	if err := enviar(dados, true, 0); err != nil {
 		t.Fatalf("enviar falhou: %v", err)
 	}
@@ -209,7 +207,7 @@ func TestEnviarFeedAntesDoCorte(t *testing.T) {
 	LP = f
 	defer func() { LP = origLP }()
 
-	dados := montarCupom("T", []Linha{{Texto: "conteudo"}})
+	dados, _ := montarCupom("T", []Linha{{Texto: "conteudo"}})
 	if err := enviar(dados, true, 3); err != nil {
 		t.Fatalf("enviar falhou: %v", err)
 	}
