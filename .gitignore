@@ -1,5 +1,6 @@
 # Go
 elgin-print
+elgin-i9-printer
 *.test
 *.out
 
