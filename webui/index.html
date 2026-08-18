@@ -262,9 +262,24 @@
     padding: 8px 12px;
     white-space: nowrap;
   }
+  /* link do projeto (GitHub) no header */
+  .gh-link {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+  }
+  .gh-link:hover { color: var(--accent); border-color: var(--accent); }
+  .gh-link svg { display: block; }
   /* botão ajuda no header */
   .help-btn {
-    margin-left: auto;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -310,8 +325,13 @@
   .modal th, .modal td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
   .modal th { color: var(--muted); font-weight: 600; }
 /* Font Awesome Free 6.7.2 (subset - apenas os iconnes usados; licenca SIL OFL 1.1) */
-@font-face { font-family:'FontAwesome'; src:url(data:font/woff2;base64,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) format('woff2'); font-weight:900; font-style:normal; font-display:block; }
+/* Font Awesome Free 6.7.2 (subsets embutidos, licenca SIL OFL 1.1)
+   solid: 15 iconnes usados na UI; brands: github */
+@font-face { font-family:'FontAwesome'; src:url(data:font/woff2;base64,d09GMgABAAAAAAZ0AAoAAAAAD4wAAAYsAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAAgQjKmXABNgIkA0DLIgQgBQYHIBvZDiCMwnHvNSkRv/aS/2/O3vtkO44CMtAMO9xyNIQqELtA7F8gzGJVRJdWjCmveg5x4vvONCL2KzsddbsdtVZgfuVjx4Xh2Ojg4BAcgEPQ/ztNqZy9YcKzAcyGUPd9ViLpzs9W9hhowmyc3bEWwikuKgstYmWFfQzVsaPtN/IkEqlm7wCdadpFMADalg4DsMXL/3cM4qJaBq6hxLHx0I322GU7pD+Vf7+GXu0/CiB22CYDhN8wG9H9AGLYg4EZ6iOcsruOU358ADY05H8q/7Rhn+hTfa4v/LTXT0f0V3758fdr+n1AaDnjdXh/+fexfrfes96x3rbest60HgSsLcuVwhoQiksBn00ogmD3f6IH6DrIATSlQJLJ54JACtBwfhROGoIMd261FBiwMk5tBYXAuRCVdJ2BmOA6xqJ0goRAHgjxxo4Sefd2M0VkzYFMqUgSKJJeuiBQA8tx8npFoz04L5TLhSOPRLbl/KijWEuitYUEXh460M8YKMMo1sNu2B/wcqZEFRBIQ0liSYisHSsTCqYDT4qwKY48KYdGSwo0NoVMDhwa86KKrDmtFSX8cmaz9cWfw65L6ptR5Y16Q98Q+iCoOI4F5+S6wz0V/CNEzHAgVNghY2ElKOPXS5KbTTYZsqD3Ok3DK7W2Y85FImuUCM4VLdRljaH6HEAD+l1KqYP1sIRtAGeqAfWZ9VTPmU8U4HynWm3SVHKrZm4KAUvwjDprjvoLgrT06TDJU/Jbrbhof8+cjkSjI45D9Ub9VSOu23ZSu11KOKGo15HpMaVSUG+wTJvR0ZoFY3jonQ7KOmqgnpaqtBBagDlizza70UY4HvCmw7RhE7F9Y3TORsYvGac4IiDIPyVBezdTOhRB8COXFUUy7Hh1GhXwt0r14+PeNVOKJcWq1/egsvBPOMEXZWKxx4Pspyph8iCOA24KBYwGPqmXtVDaEfusbQusmtqsS/bgXNmeRxnV82314ghj2mVc30GI9bEp9gHIhzW1GkZzD2cOA0fCGqGAacuItXCyrCh2bCtGYBRwtNu1wTG9181mOj6sh6ZQlomQaBiReX0whiod1FkybQ0YASaW2EbL6EZ+RGisRdIUGna6U8K5yATn2PjEF/A3QtW/1cCPEXH9LxvWqGf/qvpiuUXInuFOFhpYxE44GCdPxDCF0skEn9xK4aqXi0H/AZypINisYTrY3A7OjHbD5smSt2vzj3fm2O9pdVn8gcZyPWbA0hy6TjLO/rBPrUNrt7VLvI0xl6VcQFuuugxhU+wBGNOy7KJhY+9McNwAXJNmmWF6F6ZcfzIK8pyGCgR7l0C6VmqNY4UkObXB5gsL9Wk6ImM2J25r95wQ3sKw6xCNxywMWWm9PImFHCsEvkEzbtxcUaX6srzJJstL1UjP297HKRTIdYbrnhsyFpaFOaRzQQbzczxgT0fHL0Kw0aEH0EUINGJXeiC51xkQKRmfmZGXeHvqVbSHZWx94PKoxa0LSTRMPSYaSy+TsGBhq8pKsp6RZEVRa7UoV4VvyeWjmpADqjgKkUlTo8cQWqqe4vH2chcTqo0eiF3IIIJLTRoqFsPR0fDq6LQCOOZ0vUt9SNHAQESvwO0rq1SyhjcmtKysb835/Vzi0nC5HARX33paOS4IyuW71A/f436ynwh2SKRMGhbwzmAaciTHIJAPXlsk+WZpp14M66F5cy40iJL2f04p2ItNxVqlZouW1tmxZKg/Raldtk6ZYqr/GYfFxAlS1Ufc/kmF0cUx44OW4c20WF4fSZvQyIxX2fzazOmfVUX5aBvT1Izu9sX9M3xuJi+rtCwxD6cUOJ10iD5yRWIRWdUg+HF0n0PkiPgvEcf1srOcUyOlyOpaVGcCucleUk8YxOSwHQ7HGtwJzA4OJPDYsqYX5KU8M5lmSqUAea5B779p1uwe87Ism2KpVHSwiTNef8bMtlXU5DIoNkEMM5b+/RAI0EwD2/9mPH2AtfR7vsgAAN9ccNRNKEy00mZFQB4aWQT8Q6czdUP/wrN/aWxTClCGBsQMgNxgDmUVZaoODARVqiSF8udfQYo/aC/6mu3BXtM20j7Qt9dP0P8ytjReyJ0BAmDjLuQAAASAurL7HDQAAAA=) format('woff2'); font-weight:900; font-style:normal; font-display:block; }
+@font-face { font-family:'FontAwesomeBrands'; src:url(data:font/woff2;base64,d09GMgABAAAAAAJUAAoAAAAAA9wAAAIOAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAANMqDaAE2AiQDCMsGBCAFBgcgGykDAC4G7JbjUGoU2dOdon40yuR3VYzFp0Y8PNzvPfc1/v+3polFBCXOmmRagakDnLXYQJq/Pe3X/sxb+9zuyZ6ooQ1PELOHSMjkRKhU6AclW2oJDykIDrn5QfwQaiS5NXJqvO9bsalVmxqW4Ly32adHEy7iwMcX6Np0myzwC9HlSp8ukMVPLCeWYguzLvzr8rlL5GniTM2p8Y2VZU9qT8VHs0R8EAExEY/okSBBilYiVqhUbSszwdf1/wusvQAqmkNMpa7hxYFDV27oLYaDs/PjoTo11crF+XRiL0y5cjw/mwyLxu73xlaqkZ2enskH1kwn09PppLg417THGi8uJooOB8Vu31SvGpXQdhnKxka+Ui2VOXNxjk+miYyup6UDVTXw9Px3ZAZKowutkYuVZn+ob/enppLYbJ4jWIilknPO09gCQsjEcsUrv+r3abQnmcZanZ1+rxt8Pu9TUry1yBcajXYeiE+bNdAfXF49fjEVUigZEUCEfYoSiKKnvJWjUlL3aVJACCW/jpdkampvbWysG0FlqlVCmwqzwcEaQKvYNLUTloqPpRC8ibEh2SBpCueMlUaMxodQ2lUrzjEzHLeDDmhcX6/N9F70uvh7GH9ER4JZHIoSClkqwbWKiSAtdfJ3mj5vMvTrYAKf5Ys7v2FB5co8+HXjF2wihDGJVw3A/YmjxK0KwsgTAeoLKQA=) format('woff2'); font-weight:400; font-style:normal; font-display:block; } format('woff2'); font-weight:900; font-style:normal; font-display:block; }
 .fa { font-family:'FontAwesome'; font-weight:900; font-style:normal; line-height:1; }
+.fa-brands { font-family:'FontAwesomeBrands'; font-weight:400; font-style:normal; line-height:1; }
+.fa-github::before{content:'\f09b'}
 .fa-bold::before{content:'\f032'} .fa-align-left::before{content:'\f036'} .fa-align-center::before{content:'\f037'} .fa-align-right::before{content:'\f038'}
 .fa-print::before{content:'\f02f'} .fa-plus::before{content:'\f067'} .fa-list-ul::before{content:'\f03a'}
 .fa-xmark::before{content:'\f00d'} .fa-grip-vertical::before{content:'\f58e'} .fa-minus::before{content:'\f068'}
@@ -333,6 +353,10 @@
 <header>
   <h1>🖨️ Elgin I9</h1>
   <span class="sub">Editor de cupom · ESC/POS via USB</span>
+  <a class="gh-link" href="https://github.com/lucasbaccan/elgin-i9-printer" target="_blank" rel="noopener" title="Código-fonte do projeto no GitHub">
+    <i class="fa-brands fa-github"></i>
+    GitHub
+  </a>
   <button id="helpBtn" class="help-btn" onclick="toggleHelp()" title="Ajuda: endpoints da API, campos e dicas">Ajuda <i class="fa fa-circle-question"></i></button>
   <span class="status bad" id="status">verificando…</span>
 </header>
