@@ -25,14 +25,14 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version-file: go.mod
 
       - name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
         env:
           CGO_ENABLED: "0"
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -trimpath -ldflags "-s -w" -o elgin-i9-printer-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
+        run: go build -trimpath -o elgin-i9-printer-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
