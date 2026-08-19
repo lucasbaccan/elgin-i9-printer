@@ -391,6 +391,8 @@
       <button onclick="applyLayout('pedido')">Pedido</button>
       <button onclick="applyLayout('etiqueta')">Etiqueta</button>
       <button onclick="applyLayout('moldura')">Moldura</button>
+      <button onclick="layoutSimbolos()" title="Monta um cupom com todos os caracteres da code page CP860 — para ver quais a impressora aceita de verdade">Símbolos</button>
+      <button onclick="layoutTabela()" title="Tabela compacta com os 127 símbolos em caixas (bordas com caracteres de traço)">Tabela</button>
     </span>
   </div>
 
@@ -489,6 +491,7 @@
     <h3>Dicas</h3>
     <ul>
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
+      <li>O layout <b>Símbolos</b> imprime todos os caracteres da code page (CP860) — veja quais a impressora aceita.</li>
       <li>Para adicionar uma imagem, use o botão <b>🖼️ Imagem</b> (escolhe arquivo) ou <b>Ctrl+V</b> com uma imagem na área de transferência.</li>
       <li>Imagem e QR são convertidos para 1-bit (dither) e ajustados à largura do papel (576 dots); QR maior que o papel reduz o módulo automaticamente.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
@@ -906,6 +909,52 @@ function copiarTexto(txt, msgOk) {
 function copiarApi(which) {
   const el = document.getElementById(which === 'json' ? 'api-json' : 'api-curl');
   copiarTexto(el.textContent, which === 'json' ? 'Payload copiado' : 'curl copiado');
+}
+
+function layoutSimbolos() {
+  const linhas = SIMBOLOS.map((s, i) => ({
+    texto: (i + 1) + " '" + s.c + "' " + s.d,
+    alinhamento: 'esquerda'
+  }));
+  state.titulo = 'SIMBOLOS CP860 (1-' + SIMBOLOS.length + ')';
+  state.linhas = linhas;
+  document.getElementById('titulo').value = state.titulo;
+  render();
+  toast('Layout Símbolos montado — clique em Imprimir para testar');
+}
+
+// layoutTabela: os 127 símbolos numa grade estilo tabuleiro de xadrez —
+// primeira coluna = letra (linhas a..i), primeira linha = número (1..14),
+// 14 colunas de símbolos por linha. Bordas com caracteres de traço.
+function layoutTabela() {
+  const N = 14; // símbolos por linha
+  const linhas = [];
+  const sup = '┌' + '──┬'.repeat(N) + '──┐';
+  const sep = '├' + '──┼'.repeat(N) + '──┤';
+  const inf = '└' + '──┴'.repeat(N) + '──┘';
+  // cabeçalho: canto vazio + números 1..N
+  let cab = '│  ';
+  for (let n = 1; n <= N; n++) cab += '│' + (n < 10 ? n + ' ' : n);
+  cab += '│';
+  linhas.push({ texto: sup, alinhamento: 'centro' });
+  linhas.push({ texto: cab, alinhamento: 'centro' });
+  linhas.push({ texto: sep, alinhamento: 'centro' });
+  // linhas de símbolos rotuladas com letras maiúsculas (A, B, C, ...)
+  for (let i = 0; i < SIMBOLOS.length; i += N) {
+    const letra = String.fromCharCode(65 + Math.floor(i / N));
+    let linha = '│' + letra + ' ';
+    for (let j = 0; j < N; j++) {
+      const s = SIMBOLOS[i + j];
+      linha += '│' + (s ? s.c + ' ' : '  ');
+    }
+    linhas.push({ texto: linha + '│', alinhamento: 'centro' });
+  }
+  linhas.push({ texto: inf, alinhamento: 'centro' });
+  state.titulo = 'TABELA SIMBOLOS (' + SIMBOLOS.length + ')';
+  state.linhas = linhas;
+  document.getElementById('titulo').value = state.titulo;
+  render();
+  toast('Tabela montada — clique em Imprimir para testar');
 }
 
 // renderSimbolosRef monta a tabela de referência no modal de ajuda
