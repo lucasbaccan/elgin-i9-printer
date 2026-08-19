@@ -324,11 +324,24 @@
   .modal table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
   .modal th, .modal td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
   .modal th { color: var(--muted); font-weight: 600; }
+  /* tabela de referência dos caracteres (copiar/colar) */
+  .modal table.ref { border-collapse: collapse; margin: 6px 0 10px; }
+  .modal table.ref th, .modal table.ref td {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 13px;
+    text-align: center;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+  }
+  .modal table.ref th { background: #f0f2f5; color: var(--muted); font-weight: 600; }
+  .modal table.ref td { cursor: pointer; }
+  .modal table.ref td:hover { background: #f0f2f5; }
+  .modal table.ref td.copied { background: #dcfce7; }
 /* Font Awesome Free 6.7.2 (subset - apenas os iconnes usados; licenca SIL OFL 1.1) */
 /* Font Awesome Free 6.7.2 (subsets embutidos, licenca SIL OFL 1.1)
    solid: 15 iconnes usados na UI; brands: github */
 @font-face { font-family:'FontAwesome'; src:url(data:font/woff2;base64,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) format('woff2'); font-weight:900; font-style:normal; font-display:block; }
-@font-face { font-family:'FontAwesomeBrands'; src:url(data:font/woff2;base64,d09GMgABAAAAAAJUAAoAAAAAA9wAAAIOAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAANMqDaAE2AiQDCMsGBCAFBgcgGykDAC4G7JbjUGoU2dOdon40yuR3VYzFp0Y8PNzvPfc1/v+3polFBCXOmmRagakDnLXYQJq/Pe3X/sxb+9zuyZ6ooQ1PELOHSMjkRKhU6AclW2oJDykIDrn5QfwQaiS5NXJqvO9bsalVmxqW4Ly32adHEy7iwMcX6Np0myzwC9HlSp8ukMVPLCeWYguzLvzr8rlL5GniTM2p8Y2VZU9qT8VHs0R8EAExEY/okSBBilYiVqhUbSszwdf1/wusvQAqmkNMpa7hxYFDV27oLYaDs/PjoTo11crF+XRiL0y5cjw/mwyLxu73xlaqkZ2enskH1kwn09PppLg417THGi8uJooOB8Vu31SvGpXQdhnKxka+Ui2VOXNxjk+miYyup6UDVTXw9Px3ZAZKowutkYuVZn+ob/enppLYbJ4jWIilknPO09gCQsjEcsUrv+r3abQnmcZanZ1+rxt8Pu9TUry1yBcajXYeiE+bNdAfXF49fjEVUigZEUCEfYoSiKKnvJWjUlL3aVJACCW/jpdkampvbWysG0FlqlVCmwqzwcEaQKvYNLUTloqPpRC8ibEh2SBpCueMlUaMxodQ2lUrzjEzHLeDDmhcX6/N9F70uvh7GH9ER4JZHIoSClkqwbWKiSAtdfJ3mj5vMvTrYAKf5Ys7v2FB5co8+HXjF2wihDGJVw3A/YmjxK0KwsgTAeoLKQA=) format('woff2'); font-weight:400; font-style:normal; font-display:block; } format('woff2'); font-weight:900; font-style:normal; font-display:block; }
+@font-face { font-family:'FontAwesomeBrands'; src:url(data:font/woff2;base64,d09GMgABAAAAAAJUAAoAAAAAA9wAAAIOAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAANMqDaAE2AiQDCMsGBCAFBgcgGykDAC4G7JbjUGoU2dOdon40yuR3VYzFp0Y8PNzvPfc1/v+3polFBCXOmmRagakDnLXYQJq/Pe3X/sxb+9zuyZ6ooQ1PELOHSMjkRKhU6AclW2oJDykIDrn5QfwQaiS5NXJqvO9bsalVmxqW4Ly32adHEy7iwMcX6Np0myzwC9HlSp8ukMVPLCeWYguzLvzr8rlL5GniTM2p8Y2VZU9qT8VHs0R8EAExEY/okSBBilYiVqhUbSszwdf1/wusvQAqmkNMpa7hxYFDV27oLYaDs/PjoTo11crF+XRiL0y5cjw/mwyLxu73xlaqkZ2enskH1kwn09PppLg417THGi8uJooOB8Vu31SvGpXQdhnKxka+Ui2VOXNxjk+miYyup6UDVTXw9Px3ZAZKowutkYuVZn+ob/enppLYbJ4jWIilknPO09gCQsjEcsUrv+r3abQnmcZanZ1+rxt8Pu9TUry1yBcajXYeiE+bNdAfXF49fjEVUigZEUCEfYoSiKKnvJWjUlL3aVJACCW/jpdkampvbWysG0FlqlVCmwqzwcEaQKvYNLUTloqPpRC8ibEh2SBpCueMlUaMxodQ2lUrzjEzHLeDDmhcX6/N9F70uvh7GH9ER4JZHIoSClkqwbWKiSAtdfJ3mj5vMvTrYAKf5Ys7v2FB5co8+HXjF2wihDGJVw3A/YmjxK0KwsgTAeoLKQA=) format('woff2'); font-weight:400; font-style:normal; font-display:block; }
 .fa { font-family:'FontAwesome'; font-weight:900; font-style:normal; line-height:1; }
 .fa-brands { font-family:'FontAwesomeBrands'; font-weight:400; font-style:normal; line-height:1; }
 .fa-github::before{content:'\f09b'}
@@ -378,6 +391,8 @@
       <button onclick="applyLayout('pedido')">Pedido</button>
       <button onclick="applyLayout('etiqueta')">Etiqueta</button>
       <button onclick="applyLayout('moldura')">Moldura</button>
+      <button onclick="layoutSimbolos()" title="Monta um cupom com todos os caracteres da code page CP860 — para ver quais a impressora aceita de verdade">Símbolos</button>
+      <button onclick="layoutTabela()" title="Tabela compacta com os 127 símbolos em caixas (bordas com caracteres de traço)">Tabela</button>
     </span>
   </div>
 
@@ -476,6 +491,7 @@
     <h3>Dicas</h3>
     <ul>
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
+      <li>O layout <b>Símbolos</b> imprime todos os caracteres da code page (CP860) — veja quais a impressora aceita.</li>
       <li>Para adicionar uma imagem, use o botão <b>🖼️ Imagem</b> (escolhe arquivo) ou <b>Ctrl+V</b> com uma imagem na área de transferência.</li>
       <li>Imagem e QR são convertidos para 1-bit (dither) e ajustados à largura do papel (576 dots); QR maior que o papel reduz o módulo automaticamente.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
@@ -483,7 +499,10 @@
       <li><b>Impressora</b>: Linux detecta a Elgin por USB ID (20d1:7008); Windows usa a fila padrão ou <code>ELGIN_LP</code>.</li>
     </ul>
 
-  </div>
+  
+<h3>Caracteres da code page CP860 — referência</h3>
+    <p>Os 127 caracteres aceitos pela impressora — clique numa célula para copiar o caractere:</p>
+    <div id="simbolos-ref"></div></div>
 </div>
 
 <script>
@@ -892,6 +911,83 @@ function copiarApi(which) {
   copiarTexto(el.textContent, which === 'json' ? 'Payload copiado' : 'curl copiado');
 }
 
+function layoutSimbolos() {
+  const linhas = SIMBOLOS.map((s, i) => ({
+    texto: (i + 1) + " '" + s.c + "' " + s.d,
+    alinhamento: 'esquerda'
+  }));
+  state.titulo = 'SIMBOLOS CP860 (1-' + SIMBOLOS.length + ')';
+  state.linhas = linhas;
+  document.getElementById('titulo').value = state.titulo;
+  render();
+  toast('Layout Símbolos montado — clique em Imprimir para testar');
+}
+
+// layoutTabela: os 127 símbolos numa grade estilo tabuleiro de xadrez —
+// primeira coluna = letra (linhas a..i), primeira linha = número (1..14),
+// 14 colunas de símbolos por linha. Bordas com caracteres de traço.
+function layoutTabela() {
+  const N = 14; // símbolos por linha
+  const linhas = [];
+  const sup = '┌' + '──┬'.repeat(N) + '──┐';
+  const sep = '├' + '──┼'.repeat(N) + '──┤';
+  const inf = '└' + '──┴'.repeat(N) + '──┘';
+  // cabeçalho: canto vazio + números 1..N
+  let cab = '│  ';
+  for (let n = 1; n <= N; n++) cab += '│' + (n < 10 ? n + ' ' : n);
+  cab += '│';
+  linhas.push({ texto: sup, alinhamento: 'centro' });
+  linhas.push({ texto: cab, alinhamento: 'centro' });
+  linhas.push({ texto: sep, alinhamento: 'centro' });
+  // linhas de símbolos rotuladas com letras maiúsculas (A, B, C, ...)
+  for (let i = 0; i < SIMBOLOS.length; i += N) {
+    const letra = String.fromCharCode(65 + Math.floor(i / N));
+    let linha = '│' + letra + ' ';
+    for (let j = 0; j < N; j++) {
+      const s = SIMBOLOS[i + j];
+      linha += '│' + (s ? s.c + ' ' : '  ');
+    }
+    linhas.push({ texto: linha + '│', alinhamento: 'centro' });
+  }
+  linhas.push({ texto: inf, alinhamento: 'centro' });
+  state.titulo = 'TABELA SIMBOLOS (' + SIMBOLOS.length + ')';
+  state.linhas = linhas;
+  document.getElementById('titulo').value = state.titulo;
+  render();
+  toast('Tabela montada — clique em Imprimir para testar');
+}
+
+// renderSimbolosRef monta a tabela de referência no modal de ajuda
+// (grade igual à impressa: colunas 1..14, linhas A..I).
+function renderSimbolosRef() {
+  const box = document.getElementById('simbolos-ref');
+  if (!box) return;
+  const N = 14;
+  let html = '<table class="ref"><tr><th></th>';
+  for (let n = 1; n <= N; n++) html += '<th>' + n + '</th>';
+  html += '</tr>';
+  for (let i = 0; i < SIMBOLOS.length; i += N) {
+    html += '<tr><th>' + String.fromCharCode(65 + Math.floor(i / N)) + '</th>';
+    for (let j = 0; j < N; j++) {
+      const s = SIMBOLOS[i + j];
+      html += '<td title="Clique para copiar" onclick="copiarCelula(this)">' + (s ? s.c : '&nbsp;') + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  box.innerHTML = html;
+}
+
+// copiarCelula copia o caractere da célula clicada na tabela de referência.
+function copiarCelula(td) {
+  const c = td.textContent.trim();
+  copiarTexto(c, 'Caractere copiado: "' + c + '"');
+  td.classList.add('copied');
+  setTimeout(() => td.classList.remove('copied'), 600);
+}
+
+const SIMBOLOS = [{"c": "Ç", "d": "C cedilha maiuscula"}, {"c": "ü", "d": "u trema"}, {"c": "é", "d": "e agudo"}, {"c": "â", "d": "a circunflexo"}, {"c": "ã", "d": "a til"}, {"c": "à", "d": "a grave"}, {"c": "Á", "d": "A agudo maiuscula"}, {"c": "ç", "d": "c cedilha"}, {"c": "ê", "d": "e circunflexo"}, {"c": "Ê", "d": "E circunflexo maiuscula"}, {"c": "è", "d": "e grave"}, {"c": "Í", "d": "I agudo maiuscula"}, {"c": "Ô", "d": "O circunflexo maiuscula"}, {"c": "ì", "d": "i grave"}, {"c": "Ã", "d": "A til maiuscula"}, {"c": "Â", "d": "A circunflexo maiuscula"}, {"c": "É", "d": "E agudo maiuscula"}, {"c": "À", "d": "A grave maiuscula"}, {"c": "È", "d": "E grave maiuscula"}, {"c": "ô", "d": "o circunflexo"}, {"c": "õ", "d": "o til"}, {"c": "ò", "d": "o grave"}, {"c": "Ú", "d": "U agudo maiuscula"}, {"c": "ù", "d": "u grave"}, {"c": "Ì", "d": "I grave maiuscula"}, {"c": "Õ", "d": "O til maiuscula"}, {"c": "Ü", "d": "U trema maiuscula"}, {"c": "¢", "d": "centavo"}, {"c": "£", "d": "libra"}, {"c": "Ù", "d": "U grave maiuscula"}, {"c": "₧", "d": "peseta"}, {"c": "Ó", "d": "O agudo maiuscula"}, {"c": "á", "d": "a agudo"}, {"c": "í", "d": "i agudo"}, {"c": "ó", "d": "o agudo"}, {"c": "ú", "d": "u agudo"}, {"c": "ñ", "d": "n til"}, {"c": "Ñ", "d": "N til maiuscula"}, {"c": "ª", "d": "ordinal fem."}, {"c": "º", "d": "ordinal masc."}, {"c": "¿", "d": "interrogacao invertida"}, {"c": "Ò", "d": "O grave maiuscula"}, {"c": "¬", "d": "negacao"}, {"c": "½", "d": "um meio"}, {"c": "¼", "d": "um quarto"}, {"c": "¡", "d": "exclamacao invertida"}, {"c": "«", "d": "aspas esquerdas"}, {"c": "»", "d": "aspas direitas"}, {"c": "░", "d": "sombra clara"}, {"c": "▒", "d": "sombra media"}, {"c": "▓", "d": "sombra escura"}, {"c": "│", "d": "linha vertical"}, {"c": "┤", "d": "T p/ esquerda"}, {"c": "╡", "d": "T esq. dupla"}, {"c": "╢", "d": "traco misto"}, {"c": "╖", "d": "traco misto"}, {"c": "╕", "d": "traco misto"}, {"c": "╣", "d": "T esq. dupla"}, {"c": "║", "d": "vertical dupla"}, {"c": "╗", "d": "canto sup.dir. duplo"}, {"c": "╝", "d": "canto inf.dir. duplo"}, {"c": "╜", "d": "traco misto"}, {"c": "╛", "d": "traco misto"}, {"c": "┐", "d": "canto sup. direito"}, {"c": "└", "d": "canto inf. esquerdo"}, {"c": "┴", "d": "T p/ cima"}, {"c": "┬", "d": "T p/ baixo"}, {"c": "├", "d": "T p/ direita"}, {"c": "─", "d": "linha horizontal"}, {"c": "┼", "d": "cruz"}, {"c": "╞", "d": "T dir. dupla"}, {"c": "╟", "d": "traco misto"}, {"c": "╚", "d": "canto inf.esq. duplo"}, {"c": "╔", "d": "canto sup.esq. duplo"}, {"c": "╩", "d": "T cima dupla"}, {"c": "╦", "d": "T baixo dupla"}, {"c": "╠", "d": "T dir. dupla"}, {"c": "═", "d": "horizontal dupla"}, {"c": "╬", "d": "cruz dupla"}, {"c": "╧", "d": "traco misto"}, {"c": "╨", "d": "traco misto"}, {"c": "╤", "d": "traco misto"}, {"c": "╥", "d": "traco misto"}, {"c": "╙", "d": "traco misto"}, {"c": "╘", "d": "traco misto"}, {"c": "╒", "d": "traco misto"}, {"c": "╓", "d": "traco misto"}, {"c": "╫", "d": "traco misto"}, {"c": "╪", "d": "traco misto"}, {"c": "┘", "d": "canto inf. direito"}, {"c": "┌", "d": "canto sup. esquerdo"}, {"c": "█", "d": "bloco cheio"}, {"c": "▄", "d": "bloco baixo"}, {"c": "▌", "d": "bloco esquerda"}, {"c": "▐", "d": "bloco direita"}, {"c": "▀", "d": "bloco alto"}, {"c": "α", "d": "alfa"}, {"c": "ß", "d": "beta alema"}, {"c": "Γ", "d": "gama maiuscula"}, {"c": "π", "d": "pi"}, {"c": "Σ", "d": "sigma maiuscula"}, {"c": "σ", "d": "sigma"}, {"c": "µ", "d": "micro"}, {"c": "τ", "d": "tau"}, {"c": "Φ", "d": "fi maiuscula"}, {"c": "Θ", "d": "teta maiuscula"}, {"c": "Ω", "d": "omega"}, {"c": "δ", "d": "delta"}, {"c": "∞", "d": "infinito"}, {"c": "φ", "d": "fi"}, {"c": "ε", "d": "epsilon"}, {"c": "∩", "d": "intersecao"}, {"c": "≡", "d": "identico"}, {"c": "±", "d": "mais/menos"}, {"c": "≥", "d": "maior/igual"}, {"c": "≤", "d": "menor/igual"}, {"c": "⌠", "d": "integral sup."}, {"c": "⌡", "d": "integral inf."}, {"c": "÷", "d": "divisao"}, {"c": "≈", "d": "aprox."}, {"c": "°", "d": "grau"}, {"c": "∙", "d": "ponto pequeno"}, {"c": "•", "d": "ponto (bullet)"}, {"c": "√", "d": "raiz quadrada"}, {"c": "ⁿ", "d": "n sobrescrito"}, {"c": "²", "d": "ao quadrado"}, {"c": "■", "d": "quadrado preto"}];
+
 function applyLayout(name) {
   const l = LAYOUTS[name];
   state.titulo = l.titulo;
@@ -992,6 +1088,7 @@ async function checkHealth() {
 
 addLine();
 render();
+renderSimbolosRef();
 checkHealth();
 setInterval(checkHealth, 5000);
 
