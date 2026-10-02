@@ -114,6 +114,15 @@ Tabela A: 2400=ON-OFF-OFF · 4800=ON-OFF-ON · 9600=OFF-ON-OFF · 19200=OFF-OFF-
 
 Tabela B: 1-Claro=ON-ON · 2=OFF-OFF · 3=ON-OFF · 4-Escuro=OFF-ON
 
+> **i9 Full:** não tem micro-chaves físicas — as mesmas opções (incluindo **densidade de impressão**:
+> Luz / Padrão / Médio / Escuro) ficam no "Software Utilitário" (elgin.com.br/automacao):
+> *Configurações avançadas… → Configurações DIP → Ler / Escrever* (manual do usuário, seção 10).
+> A tabela de chaves acima vale para a i9 antiga.
+>
+> **Imagens muito pretas (pausa/linha no meio da imagem):** a i9 tem um termistor no cabeçote; se
+> passar de ~70 °C a energia do cabeçote é cortada e a impressão pausa (manual do usuário) — a
+> pausa deixa uma linha na imagem. O manual indica diminuir a densidade (e a velocidade).
+
 **AutoTeste**: com a impressora desligada, segurar o botão AVANÇO e ligar — imprime as configurações atuais.
 
 ## Beep
@@ -177,7 +186,7 @@ Ambos são impressos como **bit image raster ESC/POS** (`GS v 0 m xL xH yL yH d.
 m=0, 8-dot single density):
 
 - A imagem/QR é convertida para **1-bit** (preto/branco) com dither
-  **Floyd-Steinberg** — muito melhor que um threshold fixo em logos com bordas suaves.
+  **Atkinson** — muito melhor que um threshold fixo em logos com bordas suaves.
 - **Largura limitada a 576 dots** (80mm @ 203dpi): a imagem é reduzida com média de
   área (box average) mantendo a proporção; o QR reduz o tamanho do módulo.
 - Cada byte do raster = **8 dots horizontais** (bit 7 = dot mais à esquerda), linha a
@@ -190,7 +199,7 @@ m=0, 8-dot single density):
 
 O QR é **gerado no servidor** (correção de erro M) e impresso como imagem — o fallback
 que funciona em qualquer impressora ESC/POS, sem depender do suporte a `GS ( k` da i9
-(que não foi testado/confirmado). `qr_tamanho` (1..8, padrão 4) define o tamanho do
+(que não foi testado/confirmado). `qr_tamanho` (3..23, padrão 14; fora disso é ajustado) define o tamanho do
 módulo; se o QR não couber em 576 dots, o módulo é reduzido automaticamente. O endpoint
 `GET /qr?text=...&tamanho=N` renderiza o mesmo QR como PNG para conferência — o preview
 da Web UI usa exatamente esse endpoint, então o preview bate com o papel.

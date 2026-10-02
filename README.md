@@ -110,10 +110,14 @@ curl -X POST http://<host>:8000/print \
 
 - `tipo` — `texto` (padrão/ausente) | `imagem` | `qr`
 - `imagem` — base64 (PNG/JPEG/GIF, com ou sem prefixo `data:`); a imagem é convertida para 1-bit
-  (dither Floyd-Steinberg) e ajustada à largura do papel (576 dots) mantendo a proporção
+  (dither Atkinson) e ajustada à largura do papel (576 dots) mantendo a proporção
 - `qr` — conteúdo do QR (URL/texto); gerado no servidor e impresso como imagem (fallback `GS v 0`,
   não depende do suporte a `GS ( k`)
-- `qr_tamanho` — tamanho do módulo do QR `1..8` (padrão `4`); se não couber em 576 dots, o módulo é reduzido
+- `qr_tamanho` — tamanho do módulo do QR `3..23` (padrão `14`; valores fora do intervalo são ajustados, sem erro); se não couber em 576 dots, o módulo é reduzido
+- Imagem (`tipo=imagem`), campos opcionais: `largura` (dots, `8..576`), `brilho`, `contraste`, `meios_tons`
+  (`-100..100`), `nitidez` (`0..100`, padrão `30`), `auto_contraste` (padrão `true`) e `inverter`.
+  `POST /imagem/preview` aplica os mesmos ajustes e devolve o PNG
+  preto e branco (sem imprimir).
 
 Exemplo com imagem e QR:
 
@@ -130,8 +134,42 @@ curl -X POST http://<host>:8000/print \
   }'
 ```
 
-Também há o endpoint `GET /qr?text=...&tamanho=1..8` que renderiza um QR como PNG
+Também há o endpoint `GET /qr?text=...&tamanho=3..23` que renderiza um QR como PNG
 (sem imprimir) — útil para conferir antes de mandar para o papel.
+
+### Exemplos (menu e endpoints)
+
+Os cupons de exemplo (cupons, QR de todos os tipos, imagens, tabelas de símbolos) ficam em **`webui/exemplos/exemplos.json`**,
+a fonte única usada pela API e pela Web UI (o menu *Exemplos* é montado a partir dela):
+
+- `GET /exemplos` — lista (id, grupo, nome, descrição)
+- `GET /exemplos/{id}` — o cupom, pronto para usar como corpo do `POST /print` (não imprime)
+- `POST /exemplos/{id}/print` — imprime o exemplo
+
+Imagens são referenciadas no JSON como `"@arquivo.png"` (arquivo em `webui/exemplos/`) ou `"@test-grayscale"` (degradê de
+16 tons gerado em código) e o servidor as converte para base64. Para criar um exemplo novo, adicione uma entrada ao
+`exemplos.json`; ele aparece no menu e ganha endpoint automaticamente.
+
+### Compartilhar um cupom por link
+
+O botão **Compartilhar** da Web UI copia um link `…/#c=…` com o cupom inteiro: o estado do editor vira JSON
+compacto (só campos fora do padrão), é comprimido com deflate (`CompressionStream`) e codificado em base64url.
+Ao abrir o link, o editor é reconstruído (e o `#c=…` some da barra). Tudo fica no fragmento da URL — não vai ao servidor,
+e abrir um link nunca imprime. O conteúdo é validado ao carregar (campos conhecidos, imagens só `image/png|jpeg|gif|webp`
+em base64, limites de tamanho). Links acima de 2.000 caracteres geram um aviso (imagens são o que mais pesa) com a
+opção "Copiar sem imagens".
+
+### Documentação para agentes de IA
+
+O servidor publica dois arquivos para que modelos e agentes que acessem a URL saibam usar a API
+(endpoints, campos, limites, formatos de QR, exemplos e regras de uso):
+
+- `GET /llms.txt` — guia em Markdown (convenção [llms.txt](https://llmstxt.org)), com os `curl` já apontando para o host usado no acesso
+- `GET /openapi.json` — especificação OpenAPI 3.1
+- `GET /docs/` — **Swagger UI**: documentação interativa de todos os endpoints (os arquivos do Swagger UI ficam embutidos no binário, em `webui/swagger/`, então funciona sem internet). Atenção: nos endpoints de impressão o botão *Execute* imprime de verdade.
+
+Os fontes ficam em `webui/llms.txt` e `webui/openapi.json` (embutidos no binário, como a Web UI).
+Ao mudar a API (novos campos/endpoints), atualize os dois; um teste confere que todo endpoint está no `openapi.json`.
 
 ## Web UI
 
@@ -141,7 +179,7 @@ Abra `http://<vm>:8000/` no navegador. Oferece:
 - **Blocos de lista** (bullet/checkbox) — cada item vira uma linha com marcador na impressão.
 - **Blocos de imagem** (upload de arquivo ou Ctrl+V) e **QR code** (a partir de texto/URL, com tamanho de módulo 1–8) — ambos com preview.
 - Botões **Imprimir** / **Feed N linhas** / **Corte** / **Ping**.
-- **Layouts prontos** (teste, pedido, etiqueta, moldura).
+- **Exemplos prontos** (teste, pedido, etiqueta, moldura).
 - **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
 
 ![Web UI: construtor de cupom com blocos de imagem e QR code](docs/screenshots/webui-construtor-blocos-imagem-qr.png)
