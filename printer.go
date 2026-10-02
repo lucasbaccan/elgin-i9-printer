@@ -87,6 +87,9 @@ type Linha struct {
 	Imagem    string `json:"imagem"`     // base64 (ou data URL) para tipo=imagem
 	Qr        string `json:"qr"`         // conteúdo do QR (texto/URL) para tipo=qr
 	QrTamanho int    `json:"qr_tamanho"` // tamanho do módulo do QR (1..8; padrão 4)
+
+	// Processamento de imagem
+	Dither string `json:"dither"` // "bayer" (halftone, padrão - melhor para cinza) | "floyd" (difusão de erro - suave)
 }
 
 // Cupom é o payload de POST /print (compatível com a API antiga).
@@ -220,6 +223,10 @@ func montarImagem(l Linha) ([]byte, error) {
 	img, err := decodeImagem(l.Imagem)
 	if err != nil {
 		return nil, err
+	}
+	// Usa método de dithering escolhido: "floyd" para suave, "bayer" (padrão) para melhor contraste
+	if l.Dither == "floyd" {
+		return imagemParaGSv0Floyd(img, l.Alinhamento)
 	}
 	return imagemParaGSv0(img, l.Alinhamento)
 }

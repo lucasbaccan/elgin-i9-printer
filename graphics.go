@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
+	"image/png"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -103,6 +106,33 @@ func escalaParaLargura(gray [][]uint8, maxWidth int) [][]uint8 {
 	return out
 }
 
+// bayerMatrix é o padrão de Bayer 4x4 para halftone (meio-tom).
+// Gera uma escala de cinza visual melhor que Floyd-Steinberg em impressoras térmicas.
+var bayerMatrix = [4][4]int{
+	{0, 8, 2, 10},
+	{12, 4, 14, 6},
+	{3, 11, 1, 9},
+	{15, 7, 13, 5},
+}
+
+// ditherBayer converte luminância em bitmap 1-bit usando padrão de Bayer (halftone).
+// Preserva melhor a escala de cinza que Floyd-Steinberg em impressoras de baixa resolução.
+func ditherBayer(gray [][]uint8) []bool {
+	h := len(gray)
+	w := len(gray[0])
+	bits := make([]bool, w*h)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			bayerIdx := bayerMatrix[y%4][x%4]
+			threshold := (bayerIdx + 1) * 16 // 16..256
+			if int(gray[y][x]) > threshold {
+				bits[y*w+x] = true
+			}
+		}
+	}
+	return bits
+}
+
 // ditherFloydSteinberg converte a luminância em bitmap 1-bit (row-major,
 // w*h bools, true = preto) com difusão de erro — muito melhor que um
 // threshold fixo em logos/fotos com bordas suaves.
@@ -197,9 +227,26 @@ func alinharBits(bits []bool, w, h int, alinhamento string) ([]bool, int) {
 }
 
 // imagemParaGSv0 leva uma imagem decodificada ao raster GS v 0 (1-bit,
-// largura <= 576 dots, proporção mantida, dither). alinhamento: esquerda |
+// largura <= 576 dots, proporção mantida, halftone Bayer). alinhamento: esquerda |
 // centro | direita.
 func imagemParaGSv0(img image.Image, alinhamento string) ([]byte, error) {
+	b := img.Bounds()
+	if b.Dx()*b.Dy() > maxPixels {
+		return nil, fmt.Errorf("imagem: muito grande (%dx%d px); reduza antes de enviar", b.Dx(), b.Dy())
+	}
+	gray := grayScale(img)
+	if len(gray[0]) > dotWidth {
+		gray = escalaParaLargura(gray, dotWidth)
+	}
+	h := len(gray)
+	w := len(gray[0])
+	bits := ditherBayer(gray)
+	bits, w = alinharBits(bits, w, h, alinhamento)
+	return append(gsv0Header(w, h), gsv0Data(bits, w, h)...), nil
+}
+
+// imagemParaGSv0Floyd usa Floyd-Steinberg ao invés de Bayer (alternativa mais suave).
+func imagemParaGSv0Floyd(img image.Image, alinhamento string) ([]byte, error) {
 	b := img.Bounds()
 	if b.Dx()*b.Dy() > maxPixels {
 		return nil, fmt.Errorf("imagem: muito grande (%dx%d px); reduza antes de enviar", b.Dx(), b.Dy())
@@ -282,4 +329,34 @@ func qrPNG(conteudo string, modSize int) ([]byte, error) {
 		modSize = 8
 	}
 	return q.PNG(len(q.Bitmap()) * modSize)
+}
+
+// gerarTesteDegradé cria uma imagem PNG com degradê de tons de cinza (16 níveis)
+// para testar quantos tons a impressora consegue distinguir. Cada bloco tem
+// um tom diferente, numerado de 0 (branco) a 15 (preto).
+func gerarTesteDegradé() ([]byte, error) {
+	width := 576  // largura do papel
+	height := 480 // altura em pixels
+
+	img := image.NewGray(image.Rect(0, 0, width, height))
+
+	blockWidth := width / 16 // 16 tons de cinza
+
+	for tone := 0; tone < 16; tone++ {
+		// Tom de cinza: 0 = branco (255), 15 = preto (0)
+		grayValue := 255 - (tone * 255 / 15)
+		col := color.Gray{Y: uint8(grayValue)}
+
+		// Desenha o bloco
+		x0 := tone * blockWidth
+		x1 := x0 + blockWidth
+		draw.Draw(img, image.Rect(x0, 0, x1, height), image.NewUniform(col), image.Point{}, draw.Src)
+	}
+
+	// Codifica para PNG
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, fmt.Errorf("erro ao gerar degradê: %w", err)
+	}
+	return buf.Bytes(), nil
 }
