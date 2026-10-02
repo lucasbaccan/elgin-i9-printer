@@ -59,6 +59,7 @@
   }
   .util-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
   .util-group .sub { margin-right: 2px; }
+  .util-group.exemplos { margin-left: auto; flex-wrap: nowrap; }
   button {
     font: inherit;
     font-weight: 600;
@@ -73,6 +74,8 @@
   button:hover { background: #f0f2f5; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.primary:hover { background: var(--accent-hover); }
+  button.share { background: #f3e8ff; border-color: #d8b4fe; color: #6b21a8; }
+  button.share:hover { background: #e9d5ff; border-color: #c084fc; }
   button.danger { background: #fff; border-color: var(--danger); color: var(--danger); }
   button.danger:hover { background: #fef2f2; }
   button:disabled { opacity: .5; cursor: not-allowed; }
@@ -84,6 +87,18 @@
     border-radius: 7px;
     width: 100%;
   }
+  #exemplos {
+    appearance: none; -webkit-appearance: none;
+    width: auto;
+    font-weight: 600;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color: var(--text);
+    padding: 8px 32px 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+  }
+  #exemplos:hover { background-color: #f0f2f5; }
   .field { margin-bottom: 12px; }
   .line-row {
     display: flex;
@@ -147,13 +162,17 @@
   .list-add button:hover { background: #f0f2f5; color: var(--accent); }
   .list-chk { flex: none; }
   /* blocos gráficos (imagem/QR) no editor e no preview */
-  .img-block { display: block; width: min(100%, 48ch); margin: 3px auto; text-align: center; }
-  .img-block img { max-width: 100%; height: auto; }
+  .img-block { display: block; width: 48ch; max-width: 100%; margin: 3px 0; text-align: center; }
+  .img-block img { max-width: 100%; height: auto; vertical-align: top; }
   .img-block img.qr { image-rendering: pixelated; }
   .img-block.img-placeholder { color: var(--muted); font-size: 11px; border: 1px dashed var(--border); border-radius: 6px; padding: 8px; }
   .line-row .img-thumb { display: block; max-width: 130px; max-height: 80px; margin: 2px auto 4px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
   .line-row .img-thumb.img-empty { display: block; color: var(--muted); font-size: 12px; text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; }
   .line-row .qr-field { flex: 1; min-width: 0; }
+  .qr-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px 10px; }
+  .qr-campo { margin: 0; }
+  .qr-campo input, .qr-campo select, .qr-campo textarea { margin-top: 2px; font: inherit; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; width: 100%; box-sizing: border-box; }
+  .qr-conteudo { font: 11px/1.4 ui-monospace, monospace; color: var(--muted); white-space: pre-wrap; word-break: break-all; background: #fff; border: 1px dashed var(--border); border-radius: 6px; padding: 6px 8px; }
   .preview {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 11px;
@@ -161,13 +180,43 @@
     background: var(--paper);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 16px 12px;
+    --pad: 12px;
+    padding: 16px var(--pad);
+    position: relative;
     white-space: pre;
     width: 100%;
     overflow-x: hidden;
     min-height: 220px;
     box-shadow: inset 0 2px 6px rgba(0,0,0,.04);
   }
+  /* guia vertical: onde termina o papel (48 colunas) — QR/imagem ficam à esquerda dela */
+  .preview::after {
+    content: ''; position: absolute; top: 0; bottom: 0;
+    left: calc(var(--pad) + 48ch);
+    border-left: 1px dashed #d33;
+    pointer-events: none;
+  }
+  .preview-legenda { margin-top: 6px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  /* controle segmentado do corte: Rente | Com respiro */
+  .cmp-seg { display: inline-flex; }
+  .cmp-seg button { border-radius: 0; margin: 0; } /* mesmo tamanho (fonte e padding) dos demais botões */
+  .cmp-seg button:first-child { border-radius: 8px 0 0 8px; }
+  .cmp-seg button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+  .cmp-seg button.on, .cmp-seg button.on:hover { background: #0d9488; border-color: #0d9488; color: #fff; z-index: 1; }
+  .cmp-seg button:not(.on):hover { background: #ccfbf1; }
+  .pb-chk { margin-top: 8px; }
+  .share-msg { margin: 0 0 12px; padding: 8px 12px; font-size: 12px; border-radius: 8px; background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .share-msg[hidden] { display: none; }
+  .share-msg button { font-size: 12px; padding: 4px 10px; }
+  .aj-box { margin-top: 4px; }
+  .aj-box summary { cursor: pointer; font-size: 12px; color: var(--muted); user-select: none; }
+  .aj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px 14px; margin-top: 8px; align-items: end; }
+  .aj-sl { margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  .aj-sl b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .aj-sl input[type=range] { width: 100%; }
+  .aj-sl select { font: inherit; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; background: #fff; }
+  .aj-checks { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .guia-amostra { flex: none; display: inline-block; height: 14px; border-left: 1px dashed #d33; }
   .preview .title { font-weight: 700; }
   .preview .bold { font-weight: 700; }
   /* fonte larga da i9 = largura 2x, ALTURA NORMAL (GS ! 16 só duplica a
@@ -277,6 +326,7 @@
     background: var(--card);
   }
   .gh-link:hover { color: var(--accent); border-color: var(--accent); }
+  .gh-link + .gh-link { margin-left: 0; } /* só o primeiro empurra o grupo (GitHub, API, Ajuda, status) para a direita */
   .gh-link svg { display: block; }
   /* botão ajuda no header */
   .help-btn {
@@ -324,11 +374,24 @@
   .modal table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
   .modal th, .modal td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
   .modal th { color: var(--muted); font-weight: 600; }
+  /* tabela de referência dos caracteres (copiar/colar) */
+  .modal table.ref { border-collapse: collapse; margin: 6px 0 10px; }
+  .modal table.ref th, .modal table.ref td {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 13px;
+    text-align: center;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+  }
+  .modal table.ref th { background: #f0f2f5; color: var(--muted); font-weight: 600; }
+  .modal table.ref td { cursor: pointer; }
+  .modal table.ref td:hover { background: #f0f2f5; }
+  .modal table.ref td.copied { background: #dcfce7; }
 /* Font Awesome Free 6.7.2 (subset - apenas os iconnes usados; licenca SIL OFL 1.1) */
 /* Font Awesome Free 6.7.2 (subsets embutidos, licenca SIL OFL 1.1)
    solid: 15 iconnes usados na UI; brands: github */
 @font-face { font-family:'FontAwesome'; src:url(data:font/woff2;base64,d09GMgABAAAAAAZ0AAoAAAAAD4wAAAYsAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAAgQjKmXABNgIkA0DLIgQgBQYHIBvZDiCMwnHvNSkRv/aS/2/O3vtkO44CMtAMO9xyNIQqELtA7F8gzGJVRJdWjCmveg5x4vvONCL2KzsddbsdtVZgfuVjx4Xh2Ojg4BAcgEPQ/ztNqZy9YcKzAcyGUPd9ViLpzs9W9hhowmyc3bEWwikuKgstYmWFfQzVsaPtN/IkEqlm7wCdadpFMADalg4DsMXL/3cM4qJaBq6hxLHx0I322GU7pD+Vf7+GXu0/CiB22CYDhN8wG9H9AGLYg4EZ6iOcsruOU358ADY05H8q/7Rhn+hTfa4v/LTXT0f0V3758fdr+n1AaDnjdXh/+fexfrfes96x3rbest60HgSsLcuVwhoQiksBn00ogmD3f6IH6DrIATSlQJLJ54JACtBwfhROGoIMd261FBiwMk5tBYXAuRCVdJ2BmOA6xqJ0goRAHgjxxo4Sefd2M0VkzYFMqUgSKJJeuiBQA8tx8npFoz04L5TLhSOPRLbl/KijWEuitYUEXh460M8YKMMo1sNu2B/wcqZEFRBIQ0liSYisHSsTCqYDT4qwKY48KYdGSwo0NoVMDhwa86KKrDmtFSX8cmaz9cWfw65L6ptR5Y16Q98Q+iCoOI4F5+S6wz0V/CNEzHAgVNghY2ElKOPXS5KbTTYZsqD3Ok3DK7W2Y85FImuUCM4VLdRljaH6HEAD+l1KqYP1sIRtAGeqAfWZ9VTPmU8U4HynWm3SVHKrZm4KAUvwjDprjvoLgrT06TDJU/Jbrbhof8+cjkSjI45D9Ub9VSOu23ZSu11KOKGo15HpMaVSUG+wTJvR0ZoFY3jonQ7KOmqgnpaqtBBagDlizza70UY4HvCmw7RhE7F9Y3TORsYvGac4IiDIPyVBezdTOhRB8COXFUUy7Hh1GhXwt0r14+PeNVOKJcWq1/egsvBPOMEXZWKxx4Pspyph8iCOA24KBYwGPqmXtVDaEfusbQusmtqsS/bgXNmeRxnV82314ghj2mVc30GI9bEp9gHIhzW1GkZzD2cOA0fCGqGAacuItXCyrCh2bCtGYBRwtNu1wTG9181mOj6sh6ZQlomQaBiReX0whiod1FkybQ0YASaW2EbL6EZ+RGisRdIUGna6U8K5yATn2PjEF/A3QtW/1cCPEXH9LxvWqGf/qvpiuUXInuFOFhpYxE44GCdPxDCF0skEn9xK4aqXi0H/AZypINisYTrY3A7OjHbD5smSt2vzj3fm2O9pdVn8gcZyPWbA0hy6TjLO/rBPrUNrt7VLvI0xl6VcQFuuugxhU+wBGNOy7KJhY+9McNwAXJNmmWF6F6ZcfzIK8pyGCgR7l0C6VmqNY4UkObXB5gsL9Wk6ImM2J25r95wQ3sKw6xCNxywMWWm9PImFHCsEvkEzbtxcUaX6srzJJstL1UjP297HKRTIdYbrnhsyFpaFOaRzQQbzczxgT0fHL0Kw0aEH0EUINGJXeiC51xkQKRmfmZGXeHvqVbSHZWx94PKoxa0LSTRMPSYaSy+TsGBhq8pKsp6RZEVRa7UoV4VvyeWjmpADqjgKkUlTo8cQWqqe4vH2chcTqo0eiF3IIIJLTRoqFsPR0fDq6LQCOOZ0vUt9SNHAQESvwO0rq1SyhjcmtKysb835/Vzi0nC5HARX33paOS4IyuW71A/f436ynwh2SKRMGhbwzmAaciTHIJAPXlsk+WZpp14M66F5cy40iJL2f04p2ItNxVqlZouW1tmxZKg/Raldtk6ZYqr/GYfFxAlS1Ufc/kmF0cUx44OW4c20WF4fSZvQyIxX2fzazOmfVUX5aBvT1Izu9sX9M3xuJi+rtCwxD6cUOJ10iD5yRWIRWdUg+HF0n0PkiPgvEcf1srOcUyOlyOpaVGcCucleUk8YxOSwHQ7HGtwJzA4OJPDYsqYX5KU8M5lmSqUAea5B779p1uwe87Ism2KpVHSwiTNef8bMtlXU5DIoNkEMM5b+/RAI0EwD2/9mPH2AtfR7vsgAAN9ccNRNKEy00mZFQB4aWQT8Q6czdUP/wrN/aWxTClCGBsQMgNxgDmUVZaoODARVqiSF8udfQYo/aC/6mu3BXtM20j7Qt9dP0P8ytjReyJ0BAmDjLuQAAASAurL7HDQAAAA=) format('woff2'); font-weight:900; font-style:normal; font-display:block; }
-@font-face { font-family:'FontAwesomeBrands'; src:url(data:font/woff2;base64,d09GMgABAAAAAAJUAAoAAAAAA9wAAAIOAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAANMqDaAE2AiQDCMsGBCAFBgcgGykDAC4G7JbjUGoU2dOdon40yuR3VYzFp0Y8PNzvPfc1/v+3polFBCXOmmRagakDnLXYQJq/Pe3X/sxb+9zuyZ6ooQ1PELOHSMjkRKhU6AclW2oJDykIDrn5QfwQaiS5NXJqvO9bsalVmxqW4Ly32adHEy7iwMcX6Np0myzwC9HlSp8ukMVPLCeWYguzLvzr8rlL5GniTM2p8Y2VZU9qT8VHs0R8EAExEY/okSBBilYiVqhUbSszwdf1/wusvQAqmkNMpa7hxYFDV27oLYaDs/PjoTo11crF+XRiL0y5cjw/mwyLxu73xlaqkZ2enskH1kwn09PppLg417THGi8uJooOB8Vu31SvGpXQdhnKxka+Ui2VOXNxjk+miYyup6UDVTXw9Px3ZAZKowutkYuVZn+ob/enppLYbJ4jWIilknPO09gCQsjEcsUrv+r3abQnmcZanZ1+rxt8Pu9TUry1yBcajXYeiE+bNdAfXF49fjEVUigZEUCEfYoSiKKnvJWjUlL3aVJACCW/jpdkampvbWysG0FlqlVCmwqzwcEaQKvYNLUTloqPpRC8ibEh2SBpCueMlUaMxodQ2lUrzjEzHLeDDmhcX6/N9F70uvh7GH9ER4JZHIoSClkqwbWKiSAtdfJ3mj5vMvTrYAKf5Ys7v2FB5co8+HXjF2wihDGJVw3A/YmjxK0KwsgTAeoLKQA=) format('woff2'); font-weight:400; font-style:normal; font-display:block; } format('woff2'); font-weight:900; font-style:normal; font-display:block; }
+@font-face { font-family:'FontAwesomeBrands'; src:url(data:font/woff2;base64,d09GMgABAAAAAAJUAAoAAAAAA9wAAAIOAwcFAAAAAAAAAAAAAAAAAAAAAAAAAAAABmAANMqDaAE2AiQDCMsGBCAFBgcgGykDAC4G7JbjUGoU2dOdon40yuR3VYzFp0Y8PNzvPfc1/v+3polFBCXOmmRagakDnLXYQJq/Pe3X/sxb+9zuyZ6ooQ1PELOHSMjkRKhU6AclW2oJDykIDrn5QfwQaiS5NXJqvO9bsalVmxqW4Ly32adHEy7iwMcX6Np0myzwC9HlSp8ukMVPLCeWYguzLvzr8rlL5GniTM2p8Y2VZU9qT8VHs0R8EAExEY/okSBBilYiVqhUbSszwdf1/wusvQAqmkNMpa7hxYFDV27oLYaDs/PjoTo11crF+XRiL0y5cjw/mwyLxu73xlaqkZ2enskH1kwn09PppLg417THGi8uJooOB8Vu31SvGpXQdhnKxka+Ui2VOXNxjk+miYyup6UDVTXw9Px3ZAZKowutkYuVZn+ob/enppLYbJ4jWIilknPO09gCQsjEcsUrv+r3abQnmcZanZ1+rxt8Pu9TUry1yBcajXYeiE+bNdAfXF49fjEVUigZEUCEfYoSiKKnvJWjUlL3aVJACCW/jpdkampvbWysG0FlqlVCmwqzwcEaQKvYNLUTloqPpRC8ibEh2SBpCueMlUaMxodQ2lUrzjEzHLeDDmhcX6/N9F70uvh7GH9ER4JZHIoSClkqwbWKiSAtdfJ3mj5vMvTrYAKf5Ys7v2FB5co8+HXjF2wihDGJVw3A/YmjxK0KwsgTAeoLKQA=) format('woff2'); font-weight:400; font-style:normal; font-display:block; }
 .fa { font-family:'FontAwesome'; font-weight:900; font-style:normal; line-height:1; }
 .fa-brands { font-family:'FontAwesomeBrands'; font-weight:400; font-style:normal; line-height:1; }
 .fa-github::before{content:'\f09b'}
@@ -343,11 +406,14 @@
   .wrap { padding: 12px; }
   header { padding: 12px 14px; }
   .card { padding: 14px; }
-  .preview { font-size: 9px; padding: 12px 10px; min-height: 160px; }
+  .preview { font-size: 9px; --pad: 10px; padding: 12px var(--pad); min-height: 160px; }
   .modal-overlay { padding: 16px 8px; }
   .modal { padding: 16px 14px; }
 }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3H5GrmHRujhYYJ5QWspTmbCVGqxWjME0M/tgbynW+mY7qAulM7RVOG2l/BK3QRRYOXVHEB+CCPA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="alternate" type="text/markdown" href="/llms.txt" title="Guia para agentes de IA">
+<link rel="alternate" type="application/openapi+json" href="/openapi.json" title="OpenAPI">
 </head>
 <body>
 <header>
@@ -357,6 +423,7 @@
     <i class="fa-brands fa-github"></i>
     GitHub
   </a>
+  <a class="gh-link" href="/docs/" target="_blank" rel="noopener" title="Documentação interativa da API (Swagger): todos os endpoints, campos e exemplos">📘 API</a>
   <button id="helpBtn" class="help-btn" onclick="toggleHelp()" title="Ajuda: endpoints da API, campos e dicas">Ajuda <i class="fa fa-circle-question"></i></button>
   <span class="status bad" id="status">verificando…</span>
 </header>
@@ -372,12 +439,11 @@
       <button id="cutBtn" onclick="doCut()">✂️ Corte</button>
       <button id="pingBtn" onclick="doPing()">🏓 Ping</button>
     </span>
-    <span class="util-group">
-      <span class="sub">Layouts:</span>
-      <button onclick="applyLayout('teste')">Teste</button>
-      <button onclick="applyLayout('pedido')">Pedido</button>
-      <button onclick="applyLayout('etiqueta')">Etiqueta</button>
-      <button onclick="applyLayout('moldura')">Moldura</button>
+    <span class="util-group exemplos">
+      <span class="sub">Exemplos:</span>
+      <select id="exemplos" onchange="aplicarExemplo(this)" title="Carrega um exemplo pronto no cupom">
+        <option value="">Selecione…</option>
+      </select>
     </span>
   </div>
 
@@ -385,12 +451,15 @@
     <div class="actions">
       <button class="primary" id="printBtn" onclick="doPrint()" title="Imprimir o cupom na Elgin i9 (não faz nada se a lista de itens estiver vazia)"><i class="fa fa-print"></i> Imprimir</button>
       <button id="clearBtn" onclick="doClear()" title="Limpar tudo: apaga título e linhas para começar de novo"><i class="fa fa-trash-can"></i> Limpar</button>
+      <button class="share" id="shareBtn" onclick="compartilhar()" title="Copia um link que reconstrói este cupom em qualquer navegador (tudo vai dentro do link; nada é enviado a servidor)">🔗 Compartilhar</button>
       <span class="inline">
-        <label class="chk"><input type="checkbox" id="compactChk" checked
-               onchange="render()"
-               title="corte rente à última linha (desmarcar = respiro de 3 linhas antes do corte)"> Modo compacto</label>
+        <input type="checkbox" id="compactChk" checked hidden onchange="render()">
+        <span class="cmp-seg" role="group" aria-label="Corte do cupom">
+          <button type="button" class="on" data-cmp="segOn" onclick="setCompacto(true)" title="Corta rente à última linha">Rente</button><button type="button" data-cmp="segOff" onclick="setCompacto(false)" title="Deixa 3 linhas de respiro antes do corte">Com respiro</button>
+        </span>
       </span>
     </div>
+    <div class="share-msg" id="shareMsg" hidden></div>
 
     <div class="grid">
       <div>
@@ -411,8 +480,10 @@
       </div>
 
       <div>
-        <label style="margin-bottom:6px">Pré-visualização (48 colunas)</label>
+        <label style="margin-bottom:6px">Pré-visualização (48 colunas = 576 dots = 80mm)</label>
         <div class="preview" id="preview"></div>
+        <div class="preview-legenda"><span class="guia-amostra"></span> Linha vermelha tracejada = limite do papel</div>
+        <label class="chk pb-chk" title="Troca as imagens do preview pela versão em preto e branco puro (dither), exatamente como a impressora vai imprimir"><input type="checkbox" id="pbChk" onchange="togglePB(this.checked)"> Ver imagens como serão impressas (preto e branco)</label>
       </div>
     </div>
   </div>
@@ -445,45 +516,25 @@
 <div class="modal-overlay" id="helpModal" onclick="if(event.target===this)toggleHelp()">
   <div class="modal">
     <h2>🖨️ Elgin I9 — Ajuda <button class="m-close rm" title="Fechar" onclick="toggleHelp()"><i class="fa fa-xmark"></i></button></h2>
+    <p style="margin-top:6px"><a href="/docs/" target="_blank" rel="noopener"><b>📘 Documentação interativa da API (Swagger)</b></a> — endpoints, campos do <code>/print</code>, exemplos e tudo o que a API aceita.</p>
     <p style="margin-top:6px">Binário Go único (CLI + API + Web UI). Envia ESC/POS direto para a térmica — sem driver, sem spooler no Linux.</p>
-
-    <h3>Endpoints</h3>
-    <table>
-      <tr><th>Rota</th><th>O que faz</th></tr>
-      <tr><td><code>GET /health</code></td><td>status da impressora (device, ok)</td></tr>
-      <tr><td><code>POST /print</code></td><td>imprime um cupom (corpo JSON, abaixo)</td></tr>
-      <tr><td><code>POST /feed</code></td><td>avança papel — corpo <code>{"linhas": N}</code></td></tr>
-      <tr><td><code>POST /cut</code></td><td>aciona a guilhotina</td></tr>
-      <tr><td><code>GET /ping</code></td><td>imprime "pong" (com respiro de 3 linhas)</td></tr>
-      <tr><td><code>GET /qr</code></td><td>gera um QR como PNG (sem imprimir) — <code>?text=…&amp;tamanho=1..8</code></td></tr>
-    </table>
-
-    <h3>Campos de cada linha do <code>/print</code></h3>
-    <table>
-      <tr><th>Campo</th><th>Valores</th></tr>
-      <tr><td><code>texto</code></td><td>até 48 caracteres (24 na fonte larga); quebra sozinho</td></tr>
-      <tr><td><code>alinhamento</code></td><td><code>esquerda</code> | <code>centro</code> | <code>direita</code></td></tr>
-      <tr><td><code>fonte</code></td><td><code>normal</code> | <code>larga</code> (2x, títulos)</td></tr>
-      <tr><td><code>negrito</code></td><td><code>true</code>/<code>false</code></td></tr>
-      <tr><td><code>linha</code></td><td><code>true</code> repete o texto até o fim (moldura)</td></tr>
-      <tr><td><code>tipo</code></td><td><code>texto</code> (padrão) | <code>imagem</code> | <code>qr</code></td></tr>
-      <tr><td><code>imagem</code></td><td>base64 (PNG/JPEG/GIF, com ou sem prefixo <code>data:</code>) — só para <code>tipo=imagem</code></td></tr>
-      <tr><td><code>qr</code></td><td>conteúdo do QR (URL/texto) — só para <code>tipo=qr</code></td></tr>
-      <tr><td><code>qr_tamanho</code></td><td>módulo do QR <code>1..8</code> (padrão 4) — só para <code>tipo=qr</code></td></tr>
-      <tr><td><code>compact</code></td><td>global: <code>true</code>/ausente = corte rente; <code>false</code> = respiro de 3 linhas</td></tr>
-    </table>
 
     <h3>Dicas</h3>
     <ul>
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
+      <li>O exemplo <b>Símbolos</b> (menu Exemplos) imprime todos os caracteres da code page (CP860) — veja quais a impressora aceita.</li>
       <li>Para adicionar uma imagem, use o botão <b>🖼️ Imagem</b> (escolhe arquivo) ou <b>Ctrl+V</b> com uma imagem na área de transferência.</li>
+      <li>O botão <b>🔗 Compartilhar</b> copia um link que reconstrói o cupom inteiro (tudo vai dentro do link, nada é enviado a servidor). Abrir um link só carrega o editor — <b>não imprime</b>. Acima de 2.000 caracteres (normalmente por causa de imagens) aparece um aviso.</li>
       <li>Imagem e QR são convertidos para 1-bit (dither) e ajustados à largura do papel (576 dots); QR maior que o papel reduz o módulo automaticamente.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
       <li>Emojis e a faixa baixa (☺♥♦♣♠) <b>não existem</b> na fonte da i9 — viram <code>?</code>.</li>
       <li><b>Impressora</b>: Linux detecta a Elgin por USB ID (20d1:7008); Windows usa a fila padrão ou <code>ELGIN_LP</code>.</li>
     </ul>
 
-  </div>
+  
+<h3>Caracteres da code page CP860 — referência</h3>
+    <p>Os 127 caracteres aceitos pela impressora — clique numa célula para copiar o caractere:</p>
+    <div id="simbolos-ref"></div></div>
 </div>
 
 <script>
@@ -493,54 +544,6 @@
 <script>
 const state = { titulo: '', linhas: [] };
 
-const LAYOUTS = {
-  teste: {
-    titulo: '*** MENSAGEM SECRETA ***',
-    linhas: [
-      { texto: '=', alinhamento: 'esquerda', linha: true },
-      { texto: 'Acentos: ç ã é ô õ à', alinhamento: 'esquerda' },
-      { texto: 'Símbolos: √ ≈ ≤ ≥ ∞ Ω π µ', alinhamento: 'esquerda' },
-      { texto: '' },
-      { texto: 'Texto à esquerda', alinhamento: 'esquerda' },
-      { texto: 'Texto centralizado', alinhamento: 'centro' },
-      { texto: 'Texto à direita', alinhamento: 'direita' },
-      { texto: '' },
-      { texto: 'Fonte larga + negrito', alinhamento: 'centro', fonte: 'larga', negrito: true },
-      { texto: '=', alinhamento: 'esquerda', linha: true }
-    ]
-  },
-  pedido: {
-    titulo: 'PEDIDO #123',
-    linhas: [
-      { texto: '-X-', alinhamento: 'esquerda', linha: true },
-      { texto: '1x Hamburguer', alinhamento: 'esquerda' },
-      { texto: '2x Refrigerante', alinhamento: 'esquerda' },
-      { texto: '1x Batata Frita', alinhamento: 'esquerda' },
-      { texto: '' },
-      { texto: 'TOTAL: R$ 45,00', alinhamento: 'direita', fonte: 'larga', negrito: true },
-      { texto: '-X-', alinhamento: 'esquerda', linha: true }
-    ]
-  },
-  etiqueta: {
-    titulo: 'ETIQUETA',
-    linhas: [
-      { texto: 'Destino: Mesa 7', alinhamento: 'esquerda' },
-      { texto: 'Conteudo: FRAGIL', alinhamento: 'esquerda', negrito: true },
-      { texto: '' },
-      { texto: 'Prioridade: ALTA', alinhamento: 'centro' },
-      { texto: '-', alinhamento: 'esquerda', linha: true }
-    ]
-  },
-  moldura: {
-    titulo: '',
-    linhas: [
-      { texto: '*', alinhamento: 'esquerda', linha: true },
-      { texto: 'MENSAGEM', alinhamento: 'centro' },
-      { texto: 'COM MOLDURA', alinhamento: 'centro' },
-      { texto: '*', alinhamento: 'esquerda', linha: true }
-    ]
-  }
-};
 
 function fill(pattern, width) {
   if (!pattern) return '';
@@ -572,28 +575,173 @@ function lineRender(l) {
   return out.join('\n');
 }
 
+// alinhaCss mapeia o alinhamento do bloco (padrão: centro) para text-align.
+function alinhaCss(a) { return a === 'esquerda' ? 'left' : a === 'direita' ? 'right' : 'center'; }
+
+// escalaPapel dimensiona a imagem do preview pela proporção do papel: o papel
+// tem 576 dots (= o bloco de 48 colunas); a impressão não amplia, só reduz o
+// que passa de 576 — então largura = min(px, 576)/576 do bloco. As medidas ficam
+// em cache por src: o preview é recriado a cada tecla e, sem o cache, a imagem
+// aparecia em tamanho natural (grande) até o onload encolhê-la — a "piscada".
+const imgMedidas = {};
+
+// ---- preview "como será impresso": imagens trocadas pelo bitmap 1-bit do servidor ----
+let previewPB = false;
+const pbCache = {}, pbPend = {}, pbUltimo = {}; // chave -> object URL; pbUltimo[i] = último PB do bloco i
+let pbTimer = null;
+function togglePB(on) {
+  previewPB = on;
+  renderPreview();
+}
+
+// valores padrão dos ajustes de imagem (o que o servidor assume quando o campo é omitido)
+const AJ_PADRAO = { largura: 0, brilho: 0, contraste: 0, meios_tons: 0, nitidez: 30, auto_contraste: true, inverter: false };
+
+// paramsImagem devolve só os ajustes diferentes do padrão (vai no payload e no preview).
+function paramsImagem(l) {
+  const p = {};
+  for (const k of Object.keys(AJ_PADRAO)) {
+    if (l[k] !== undefined && l[k] !== AJ_PADRAO[k]) p[k] = l[k];
+  }
+  return p;
+}
+
+// impressão digital curta de um data URL (evita usar MBs de base64 como chave de cache)
+function fp(s) { return s.length + ':' + s.slice(60, 100) + s.slice(-40); }
+
+// px da tela que equivalem aos 576 dots do papel (o bloco de 48 colunas) × densidade de pixels
+function escalaTela() {
+  const p = document.getElementById('preview');
+  const probe = document.createElement('div');
+  probe.style.cssText = 'width:48ch;max-width:100%;height:0';
+  p.appendChild(probe);
+  const w = probe.clientWidth || 300;
+  probe.remove();
+  return Math.max(60, Math.round(w * (window.devicePixelRatio || 1)));
+}
+
+// pbSrc devolve {src, k}: o PNG preto e branco do servidor (k = dots por pixel do PNG)
+// ou, enquanto ele não chega, o último PB do bloco / a imagem original.
+function pbSrc(l, i) {
+  const E = escalaTela();
+  const params = paramsImagem(l);
+  const key = fp(l.imagem) + JSON.stringify(params) + '@' + E;
+  const k = E < 576 ? 576 / E : 1;
+  if (pbCache[key]) { pbUltimo[i] = { src: pbCache[key], k }; return pbUltimo[i]; }
+  if (!pbPend[key]) {
+    pbPend[key] = true;
+    fetch('/imagem/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ imagem: l.imagem, escala_px: E }, params)) })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); })
+      .then(b => {
+        const chaves = Object.keys(pbCache);
+        if (chaves.length > 40) { URL.revokeObjectURL(pbCache[chaves[0]]); delete pbCache[chaves[0]]; }
+        pbCache[key] = URL.createObjectURL(b);
+      })
+      .catch(() => {})
+      .finally(() => { delete pbPend[key]; renderPreview(); });
+  }
+  return pbUltimo[i] || { src: l.imagem, k: 1 };
+}
+
+// ---- ajustes de imagem (sliders etc.) ----
+function setAjuste(i, k, v) {
+  const l = state.linhas[i];
+  l[k] = typeof AJ_PADRAO[k] === 'number' ? parseInt(v, 10) || 0 : v;
+  const lbl = document.getElementById('ajv-' + i + '-' + k);
+  if (lbl) lbl.textContent = l[k];
+  if (k !== 'largura' && !previewPB) { // mexeu num ajuste: liga a prévia P&B para ver o efeito
+    previewPB = true;
+    document.getElementById('pbChk').checked = true;
+  }
+  clearTimeout(pbTimer);
+  pbTimer = setTimeout(() => { renderPreview(); renderApi(); }, 120);
+}
+
+function resetAjustes(i) {
+  const l = state.linhas[i];
+  for (const k of Object.keys(AJ_PADRAO)) delete l[k];
+  if (!previewPB) { previewPB = true; document.getElementById('pbChk').checked = true; }
+  renderLines(); renderPreview(); renderApi();
+}
+
+function ajSlider(i, l, k, rotulo, min, max, dica) {
+  const v = l[k] !== undefined ? l[k] : AJ_PADRAO[k];
+  return '<label class="aj-sl" title="' + dica + '"><span>' + rotulo + ' <b id="ajv-' + i + '-' + k + '">' + v + '</b></span>' +
+    '<input type="range" min="' + min + '" max="' + max + '" value="' + v + '" oninput="setAjuste(' + i + ',\'' + k + '\',this.value)" ondblclick="this.value=' + AJ_PADRAO[k] + '; setAjuste(' + i + ',\'' + k + '\',' + AJ_PADRAO[k] + ')"></label>';
+}
+
+// opções do seletor "tamanho" da imagem: largura impressa em passos de 6 colunas (12 dots cada)
+function opcoesLarguraImagem(l) {
+  const atual = l.largura || 0;
+  let html = opt('0', String(atual), 'Automático (original)');
+  for (let c = 6; c <= 48; c += 6) {
+    html += opt(String(c * 12), String(atual), c + '/48 col · ' + Math.round(c / 48 * 100) + '%');
+  }
+  return html;
+}
+
+function ajustesHtml(i, l) {
+  return '<details class="aj-box"' + (l.ajOpen ? ' open' : '') + ' ontoggle="state.linhas[' + i + '].ajOpen=this.open">' +
+    '<summary title="Brilho, contraste e outros ajustes — só afetam a impressão; a foto original não é alterada">⚙️ Ajustes da imagem</summary>' +
+    '<div class="aj-grid">' +
+      ajSlider(i, l, 'brilho', 'Brilho', -100, 100, 'Mais claro (+) ou mais escuro (−). Duplo clique zera') +
+      ajSlider(i, l, 'contraste', 'Contraste', -100, 100, 'Diferença entre claros e escuros. Duplo clique zera') +
+      ajSlider(i, l, 'meios_tons', 'Meios-tons', -100, 100, 'Clareia (+) ou escurece (−) só os tons médios sem estourar preto/branco — útil porque a térmica escurece. Duplo clique zera') +
+      ajSlider(i, l, 'nitidez', 'Nitidez', 0, 100, 'Realça bordas e detalhes antes de converter para preto e branco (padrão 30). Duplo clique volta ao padrão') +
+      '<div class="aj-checks">' +
+        '<label class="chk" title="Estica o histograma: o mais escuro vira preto e o mais claro vira branco"><input type="checkbox" ' + (l.auto_contraste === false ? '' : 'checked') + ' onchange="setAjuste(' + i + ',\'auto_contraste\',this.checked)"> Auto-contraste</label>' +
+        '<label class="chk" title="Troca preto por branco (negativo)"><input type="checkbox" ' + (l.inverter ? 'checked' : '') + ' onchange="setAjuste(' + i + ',\'inverter\',this.checked)"> Inverter</label>' +
+        '<button class="icon-btn" title="Voltar todos os ajustes ao padrão" onclick="resetAjustes(' + i + ')">↺ Redefinir</button>' +
+      '</div>' +
+    '</div></details>';
+}
+
+const imgUltima = {}; // última medida por posição do bloco: enquanto um src novo carrega, mantém o tamanho anterior
+// medidas guardadas em DOTS do papel: {d: largura em dots, r: proporção largura/altura}
+function estiloImg(src, i, largura) {
+  const m = imgMedidas[src + '|' + (largura || 0)] || imgUltima[i];
+  return m ? ' style="width:' + (Math.min(m.d, 576) / 576 * 100) + '%;aspect-ratio:' + m.r + '"'
+           : ' style="visibility:hidden"';
+}
+// k = dots por pixel do PNG (1 para original/QR; 576/escala para o PB reduzido do servidor);
+// largura = largura pedida em dots (só vale para a imagem original, que o navegador mostra no tamanho natural)
+function escalaPapel(img, i, k, largura) {
+  const d = (largura || 0) > 0 ? largura : Math.min(img.naturalWidth * (k || 1), 576);
+  const m = { d, r: img.naturalWidth / img.naturalHeight };
+  imgMedidas[img.getAttribute('src') + '|' + (largura || 0)] = imgUltima[i] = m;
+  img.style.width = (d / 576 * 100) + '%';
+  img.style.aspectRatio = m.r;
+  img.style.visibility = '';
+}
+
 function renderPreview() {
   const out = [];
   if (state.titulo) {
     // título larga 2x: quebra a cada 24 colunas, cada linha centralizada
     for (let i = 0; i < state.titulo.length; i += 24) {
-      out.push('<span class="title large">' + padTo(state.titulo.slice(i, i + 24), 24, 'centro') + '</span>');
+      out.push('<span class="title large">' + lineEscape(padTo(state.titulo.slice(i, i + 24), 24, 'centro')) + '</span>');
     }
   }
+  let gi = 0; // posição do bloco gráfico (chave do cache de tamanho)
   for (const l of expandLinhas()) {
     if (l.tipo === 'imagem') {
-      out.push('<div class="img-block"><img src="' + l.imagem + '" alt="imagem do cupom"></div>');
+      const i = gi++;
+      const pb = previewPB ? pbSrc(l, i) : { src: l.imagem, k: 1 };
+      const lg = pb.k === 1 && l.largura > 0 && pb.src === l.imagem ? l.largura : 0; // original: largura pedida
+      out.push('<div class="img-block" style="text-align:' + alinhaCss(l.alinhamento) + '"><img src="' + pb.src + '" alt="imagem do cupom"' + estiloImg(pb.src, i, lg) + ' onload="escalaPapel(this,' + i + ',' + pb.k + ',' + lg + ')"></div>');
       continue;
     }
     if (l.tipo === 'qr') {
-      const src = '/qr?text=' + encodeURIComponent(l.qr) + '&tamanho=' + (l.qr_tamanho || 4);
-      out.push('<div class="img-block"><img class="qr" src="' + src + '" alt="QR code"></div>');
+      const i = gi++;
+      const src = '/qr?text=' + encodeURIComponent(l.qr) + '&tamanho=' + (l.qr_tamanho || 14);
+      out.push('<div class="img-block" style="text-align:' + alinhaCss(l.alinhamento) + '"><img class="qr" src="' + src + '" alt="QR code"' + estiloImg(src, i, 0) + ' onload="escalaPapel(this,' + i + ',1,0)"></div>');
       continue;
     }
     let cls = '';
     if (l.negrito) cls += ' bold';
     if (l.fonte === 'larga') cls += ' large';
-    out.push('<span class="' + cls.trim() + '">' + lineRender(l) + '</span>');
+    out.push('<span class="' + cls.trim() + '">' + lineEscape(lineRender(l)) + '</span>'); // escapa DEPOIS de alinhar (não muda a largura)
   }
   // sem modo compacto: mostra o respiro de 3 linhas antes do corte
   if (!document.getElementById('compactChk').checked) {
@@ -601,11 +749,20 @@ function renderPreview() {
   }
   // onde a guilhotina corta (tesoura + linha pontilhada)
   out.push('<span class="cut-marker"><span class="cut-label"><i class="fa fa-scissors"></i> corte</span></span>');
-  document.getElementById('preview').innerHTML = out.join('\n');
+  // blocos (div) já quebram a linha sozinhos: um '\n' depois deles, em
+  // white-space:pre, viraria uma linha em branco extra no preview.
+  let html = '';
+  out.forEach((item, i) => {
+    if (i > 0 && !out[i - 1].startsWith('<div class="img-block')) html += '\n';
+    html += item;
+  });
+  document.getElementById('preview').innerHTML = html;
 }
 
+// escapa para HTML, inclusive aspas: o valor também entra em atributos (value="...")
 function lineEscape(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function renderLines() {
@@ -661,18 +818,55 @@ function renderLines() {
         '<div class="line-configs">' +
           '<span class="drag-handle" title="Arrastar para reordenar o bloco"><i class="fa fa-grip-vertical"></i></span>' +
           '<button class="icon-btn" title="Escolher outra imagem" onclick="pickImagem(' + i + ')">🖼️ trocar</button>' +
+          '<label class="chk" title="Largura da imagem impressa (em colunas do papel). Automático = tamanho original, até a largura do papel">tamanho ' +
+            '<select onchange="setAjuste(' + i + ',\'largura\',this.value)">' + opcoesLarguraImagem(l) + '</select></label>' +
           '<button class="rm" title="Remover bloco de imagem" onclick="removeLine(' + i + ')"><i class="fa fa-xmark"></i></button>' +
-        '</div>';
+        '</div>' + (l.imagem ? ajustesHtml(i, l) : '');
     } else if (l.tipo === 'qr') {
       row.className = 'line-row';
+      const modo = l.qr_modo || 'texto';
+      const def = QR_TIPOS[modo];
+      const campos = l.qr_campos || {};
+      let corpo;
+      if (modo === 'texto') {
+        corpo = '<input type="text" id="qr-' + i + '" value="' + lineEscape(l.qr || '') + '" placeholder="Conteúdo do QR (URL ou texto livre)" ' +
+          'oninput="state.linhas[' + i + '].qr=this.value; render()">';
+      } else {
+        corpo = '<div class="qr-campos">' + def.campos.map(c => {
+          const id = 'qr-' + i + '-' + c.k;
+          const v = campos[c.k] != null ? campos[c.k] : (c.def || '');
+          const on = 'oninput="setQrCampo(' + i + ',\'' + c.k + '\',this.value)"';
+          let ctl;
+          if (c.opts) {
+            ctl = '<select id="' + id + '" onchange="setQrCampo(' + i + ',\'' + c.k + '\',this.value)">' +
+              c.opts.map(o => opt(o[0], v, o[1])).join('') + '</select>';
+          } else if (c.multi) {
+            ctl = '<textarea id="' + id + '" rows="2" placeholder="' + lineEscape(c.ph || '') + '" ' + on + '>' + lineEscape(v) + '</textarea>';
+          } else {
+            ctl = '<input type="' + (c.type || 'text') + '" id="' + id + '" value="' + lineEscape(v) + '" placeholder="' + lineEscape(c.ph || '') + '"' +
+              (c.minDe && campos[c.minDe] ? ' min="' + lineEscape(campos[c.minDe]) + '"' : '') + ' ' + on + '>';
+          }
+          return '<label class="qr-campo">' + c.label + ctl + '</label>';
+        }).join('') + '</div>' +
+        '<div class="qr-conteudo" id="qrc-' + i + '" title="Texto que vai dentro do QR">' + (l.qr ? lineEscape(l.qr) : QR_VAZIO) + '</div>';
+      }
       row.innerHTML =
-        '<input type="text" id="qr-' + i + '" value="' + lineEscape(l.qr || '') + '" placeholder="Conteúdo do QR (URL ou texto livre)" ' +
-          'oninput="state.linhas[' + i + '].qr=this.value; render()">' +
+        corpo +
         '<div class="line-configs">' +
           '<span class="drag-handle" title="Arrastar para reordenar o bloco"><i class="fa fa-grip-vertical"></i></span>' +
+          '<span class="align-group">' +
+            ['esquerda', 'centro', 'direita'].map(a =>
+              '<button class="icon-btn' + ((l.alinhamento || 'centro') === a ? ' active' : '') + '" title="Posição do QR: ' + a + '" onclick="state.linhas[' + i + '].alinhamento=\'' + a + '\'; render()"><i class="fa fa-align-' + (a === 'centro' ? 'center' : a === 'esquerda' ? 'left' : 'right') + '"></i></button>'
+            ).join('') +
+          '</span>' +
+          '<label class="chk">tipo ' +
+            '<select title="Tipo de QR: o conteúdo é montado automaticamente no formato que o celular reconhece" onchange="setQrModo(' + i + ',this.value)">' +
+              Object.keys(QR_TIPOS).map(k => opt(k, modo, QR_TIPOS[k].label)).join('') +
+            '</select>' +
+          '</label>' +
           '<label class="chk">módulo ' +
-            '<select title="Tamanho do módulo do QR (1 a 8) — maior = mais legível e ocupa mais papel" onchange="setQrTamanho(' + i + ',this.value)">' +
-              [1,2,3,4,5,6,7,8].map(n => opt(String(n), String(l.qr_tamanho || 4))).join('') +
+            '<select id="qrmod-' + i + '" title="Tamanho do módulo do QR (3 a 8; o 3 só funciona bem com poucos dados) — maior = mais legível e ocupa mais papel" onchange="setQrTamanho(' + i + ',this.value)">' +
+              qrOpcoesModulo(l) +
             '</select>' +
           '</label>' +
           '<button class="rm" title="Remover bloco de QR" onclick="removeLine(' + i + ')"><i class="fa fa-xmark"></i></button>' +
@@ -760,11 +954,14 @@ function expandLinhas() {
 // linhaParaPayload converte um bloco (texto/imagem/qr) no JSON do POST /print.
 function linhaParaPayload(l) {
   if (l.tipo === 'imagem') {
-    return { tipo: 'imagem', imagem: l.imagem };
+    const o = Object.assign({ tipo: 'imagem', imagem: l.imagem }, paramsImagem(l));
+    if (l.alinhamento && l.alinhamento !== 'centro') o.alinhamento = l.alinhamento;
+    return o;
   }
   if (l.tipo === 'qr') {
     const o = { tipo: 'qr', qr: l.qr };
-    if (l.qr_tamanho && l.qr_tamanho !== 4) o.qr_tamanho = l.qr_tamanho;
+    if (l.qr_tamanho && l.qr_tamanho !== 14) o.qr_tamanho = l.qr_tamanho;
+    if (l.alinhamento && l.alinhamento !== 'centro') o.alinhamento = l.alinhamento;
     return o;
   }
   const o = { texto: l.texto };
@@ -807,15 +1004,217 @@ function onImagemFile(file) {
   r.readAsDataURL(file);
 }
 
+
+// ---- QR por tipo: o usuário preenche campos, o conteúdo no formato certo é montado aqui ----
+const qrEsc = v => String(v == null ? '' : v).replace(/([\;,:"])/g, '\\$1');           // WIFI:
+const vcEsc = v => String(v == null ? '' : v).replace(/([\;,])/g, '\\$1').replace(/\r?\n/g, '\\n'); // vCard/iCal
+const digitos = v => String(v == null ? '' : v).replace(/\D/g, '');
+const semAcento = v => String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+// CRC16-CCITT (poly 0x1021, init 0xFFFF) exigido pelo BR Code do PIX.
+function crc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+function emv(id, valor) { return id + String(valor.length).padStart(2, '0') + valor; }
+
+function montaPix(c) {
+  const chave = (c.chave || '').trim();
+  if (!chave) return '';
+  const nome = semAcento(c.nome || 'RECEBEDOR').toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 25).trim() || 'RECEBEDOR';
+  const cidade = semAcento(c.cidade || 'SAO PAULO').toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 15).trim() || 'SAO PAULO';
+  const txid = (c.txid || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || '***';
+  const valor = parseFloat(String(c.valor || '').replace(',', '.'));
+  let p = emv('00', '01') + emv('01', valor > 0 ? '12' : '11') +
+    emv('26', emv('00', 'br.gov.bcb.pix') + emv('01', chave)) +
+    emv('52', '0000') + emv('53', '986') +
+    (valor > 0 ? emv('54', valor.toFixed(2)) : '') +
+    emv('58', 'BR') + emv('59', nome) + emv('60', cidade) +
+    emv('62', emv('05', txid)) + '6304';
+  return p + crc16(p);
+}
+
+const QR_TIPOS = {
+  texto: { label: 'Texto / URL', campos: [] },
+  wifi: { label: 'Wi-Fi', campos: [
+    { k: 'ssid', label: 'Rede (SSID) *', ph: 'MinhaRede' },
+    { k: 'senha', label: 'Senha', ph: 'senha da rede' },
+    { k: 'tipo', label: 'Segurança', def: 'WPA', opts: [['WPA', 'WPA/WPA2/WPA3'], ['WEP', 'WEP'], ['nopass', 'Sem senha']] },
+    { k: 'oculta', label: 'Rede oculta', def: 'false', opts: [['false', 'Não'], ['true', 'Sim']] }
+  ], monta: c => c.ssid ? 'WIFI:T:' + (c.tipo || 'WPA') + ';S:' + qrEsc(c.ssid) + ';' +
+      ((c.tipo || 'WPA') === 'nopass' ? '' : 'P:' + qrEsc(c.senha) + ';') + 'H:' + (c.oculta || 'false') + ';;' : '' },
+  whatsapp: { label: 'WhatsApp', campos: [
+    { k: 'fone', label: 'Telefone com DDI+DDD *', ph: '5511999999999' },
+    { k: 'msg', label: 'Mensagem (opcional)', ph: 'Olá!' }
+  ], monta: c => digitos(c.fone) ? 'https://wa.me/' + digitos(c.fone) + (c.msg ? '?text=' + encodeURIComponent(c.msg) : '') : '' },
+  contato: { label: 'Contato (vCard)', campos: [
+    { k: 'nome', label: 'Nome *', ph: 'Maria Silva' },
+    { k: 'fone', label: 'Telefone', ph: '+5511999999999' },
+    { k: 'email', label: 'E-mail', ph: 'maria@exemplo.com', type: 'email' },
+    { k: 'org', label: 'Empresa', ph: 'Empresa LTDA' },
+    { k: 'cargo', label: 'Cargo', ph: 'Gerente' },
+    { k: 'site', label: 'Site', ph: 'https://exemplo.com' }
+  ], monta: c => c.nome ? ['BEGIN:VCARD', 'VERSION:3.0', 'FN:' + vcEsc(c.nome), 'N:' + vcEsc(c.nome) + ';;;;',
+      c.org && 'ORG:' + vcEsc(c.org), c.cargo && 'TITLE:' + vcEsc(c.cargo),
+      c.fone && 'TEL:' + vcEsc(c.fone), c.email && 'EMAIL:' + vcEsc(c.email), c.site && 'URL:' + c.site,
+      'END:VCARD'].filter(Boolean).join('\n') : '' },
+  email: { label: 'E-mail', campos: [
+    { k: 'para', label: 'Para *', ph: 'contato@exemplo.com', type: 'email' },
+    { k: 'assunto', label: 'Assunto', ph: 'Assunto' },
+    { k: 'corpo', label: 'Mensagem', ph: 'Texto do e-mail', multi: true }
+  ], monta: c => {
+    if (!c.para) return '';
+    const q = [];
+    if (c.assunto) q.push('subject=' + encodeURIComponent(c.assunto));
+    if (c.corpo) q.push('body=' + encodeURIComponent(c.corpo));
+    return 'mailto:' + c.para + (q.length ? '?' + q.join('&') : '');
+  } },
+  telefone: { label: 'Telefone', campos: [
+    { k: 'fone', label: 'Telefone *', ph: '+5511999999999' }
+  ], monta: c => digitos(c.fone) ? 'tel:' + ((c.fone || '').trim().startsWith('+') ? '+' : '') + digitos(c.fone) : '' },
+  sms: { label: 'SMS', campos: [
+    { k: 'fone', label: 'Telefone *', ph: '+5511999999999' },
+    { k: 'msg', label: 'Mensagem', ph: 'Texto do SMS' }
+  ], monta: c => digitos(c.fone) ? 'SMSTO:' + ((c.fone || '').trim().startsWith('+') ? '+' : '') + digitos(c.fone) + ':' + (c.msg || '') : '' },
+  geo: { label: 'Localização', campos: [
+    { k: 'lat', label: 'Latitude *', ph: '-23.5505' },
+    { k: 'lng', label: 'Longitude *', ph: '-46.6333' }
+  ], monta: c => {
+    const la = parseFloat(String(c.lat || '').replace(',', '.')), lo = parseFloat(String(c.lng || '').replace(',', '.'));
+    return isFinite(la) && isFinite(lo) ? 'geo:' + la + ',' + lo : '';
+  } },
+  evento: { label: 'Evento (iCal)', campos: [
+    { k: 'titulo', label: 'Título *', ph: 'Reunião' },
+    { k: 'inicio', label: 'Início *', type: 'datetime-local' },
+    { k: 'fim', label: 'Fim', type: 'datetime-local', minDe: 'inicio' },
+    { k: 'local', label: 'Local', ph: 'Sala 3' },
+    { k: 'link', label: 'Link', ph: 'https://meet.google.com/abc-defg-hij', type: 'url' },
+    { k: 'descricao', label: 'Descrição', ph: 'Detalhes do evento', multi: true }
+  ], monta: c => {
+    const dt = v => v.replace(/[-:]/g, '').slice(0, 15).padEnd(15, '0');
+    return c.titulo && c.inicio ? ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', 'SUMMARY:' + vcEsc(c.titulo),
+      'DTSTART:' + dt(c.inicio), c.fim && 'DTEND:' + dt(c.fim), c.local && 'LOCATION:' + vcEsc(c.local),
+      // o link vai na propriedade URL e também no fim da descrição (alguns apps de agenda ignoram URL)
+      (c.descricao || c.link) && 'DESCRIPTION:' + vcEsc([c.descricao, c.link && 'Link: ' + c.link].filter(Boolean).join('\n')),
+      c.link && 'URL:' + c.link,
+      'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\n') : '';
+  } },
+  pix: { label: 'PIX', campos: [
+    { k: 'chave', label: 'Chave PIX *', ph: 'CPF, CNPJ, e-mail, telefone ou aleatória' },
+    { k: 'nome', label: 'Nome do recebedor', ph: 'Loja Exemplo' },
+    { k: 'cidade', label: 'Cidade', ph: 'Sao Paulo' },
+    { k: 'valor', label: 'Valor (vazio = livre)', ph: '10,00' },
+    { k: 'txid', label: 'Identificador', ph: '***' }
+  ], monta: montaPix }
+};
+
+// nº de módulos (lado) de cada conteúdo de QR, vindo de GET /qr/info; cache + pendentes.
+const qrModulosCache = {}, qrModulosPend = {};
+const QR_VAZIO = '— preencha os campos obrigatórios (*) —';
+
+// atualiza, sem recriar o editor, as opções do seletor de módulo de cada bloco QR
+function atualizaSelectsModulo() {
+  state.linhas.forEach((l, i) => {
+    const sel = document.getElementById('qrmod-' + i);
+    if (l.tipo === 'qr' && sel) sel.innerHTML = qrOpcoesModulo(l);
+  });
+}
+
+function qrModulosDe(texto) {
+  if (qrModulosCache[texto] != null) return qrModulosCache[texto];
+  if (!qrModulosPend[texto]) {
+    qrModulosPend[texto] = true;
+    fetch('/qr/info?text=' + encodeURIComponent(texto)).then(r => r.json()).then(j => {
+      qrModulosCache[texto] = j.modulos || 0;
+    }).catch(() => { qrModulosCache[texto] = 0; }).finally(() => {
+      delete qrModulosPend[texto];
+      atualizaSelectsModulo(); // só as opções: refazer o editor fecharia o seletor de data/hora aberto
+    });
+  }
+  return null;
+}
+
+// opções do seletor de módulo: "5 · 125 dots · 11/48 col · 22%" (1 coluna = 12 dots).
+// Vai de 3 até o maior módulo que ainda cabe nos 576 dots do papel.
+function qrOpcoesModulo(l) {
+  const atual = Math.max(3, l.qr_tamanho || 14);
+  const n = l.qr ? qrModulosDe(l.qr) : null;
+  const max = n ? Math.max(3, Math.min(23, Math.floor(576 / n))) : 8;
+  let html = '';
+  for (let m = 3; m <= Math.max(max, atual); m++) {
+    let label = String(m);
+    if (n) {
+      const dots = Math.min(n * m, 576);
+      label += ' · ' + Math.ceil(dots / 12) + '/48 col · ' + Math.round(dots / 576 * 100) + '%';
+    }
+    html += opt(String(m), String(atual), label);
+  }
+  return html;
+}
+
+// recalcula o conteúdo do QR a partir dos campos do tipo escolhido.
+function atualizaQr(l) {
+  const def = QR_TIPOS[l.qr_modo || 'texto'];
+  if (!def.monta) return;
+  const c = Object.assign({}, l.qr_campos || {});
+  def.campos.forEach(f => { if (c[f.k] == null && f.def != null) c[f.k] = f.def; });
+  l.qr = def.monta(c);
+}
+
+function setQrModo(i, modo) {
+  const l = state.linhas[i];
+  l.qr_modo = modo;
+  l.qr_campos = {};
+  if (modo === 'texto') l.qr = '';
+  else atualizaQr(l);
+  render();
+}
+
+function setQrCampo(i, k, v) {
+  const l = state.linhas[i];
+  l.qr_campos = l.qr_campos || {};
+  const campos = QR_TIPOS[l.qr_modo || 'texto'].campos;
+  // campo com minDe (ex.: Fim >= Início): o navegador não impede digitar um valor menor,
+  // então corrige aqui e reflete no input
+  const def = campos.find(f => f.k === k);
+  if (def && def.minDe && v && l.qr_campos[def.minDe] && v < l.qr_campos[def.minDe]) {
+    v = l.qr_campos[def.minDe];
+    const el = document.getElementById('qr-' + i + '-' + k);
+    if (el) el.value = v;
+  }
+  l.qr_campos[k] = v;
+  // mudou o campo-base: atualiza o min do dependente e, se ele ficou antes, sobe para o mínimo
+  campos.filter(f => f.minDe === k).forEach(f => {
+    const el = document.getElementById('qr-' + i + '-' + f.k);
+    if (el) el.min = v;
+    if (v && l.qr_campos[f.k] && l.qr_campos[f.k] < v) {
+      l.qr_campos[f.k] = v;
+      if (el) el.value = v;
+    }
+  });
+  atualizaQr(l);
+  // NÃO refaz o editor (render): recriar os campos fecharia o seletor nativo de
+  // data/hora a cada ajuste e tiraria o foco. Atualiza só o que depende do QR.
+  const c = document.getElementById('qrc-' + i);
+  if (c) c.textContent = l.qr || QR_VAZIO;
+  atualizaSelectsModulo();
+  renderPreview();
+  renderApi();
+}
+
 function addQr() {
-  state.linhas.push({ tipo: 'qr', qr: '', qr_tamanho: 4 });
+  state.linhas.push({ tipo: 'qr', qr: '', qr_tamanho: 14 });
   render();
   const el = document.getElementById('qr-' + (state.linhas.length - 1));
   if (el) el.focus();
 }
 
 function setQrTamanho(i, v) {
-  state.linhas[i].qr_tamanho = parseInt(v, 10) || 4;
+  state.linhas[i].qr_tamanho = Math.max(3, Math.min(23, parseInt(v, 10) || 14));
   render();
 }
 
@@ -892,17 +1291,114 @@ function copiarApi(which) {
   copiarTexto(el.textContent, which === 'json' ? 'Payload copiado' : 'curl copiado');
 }
 
-function applyLayout(name) {
-  const l = LAYOUTS[name];
-  state.titulo = l.titulo;
-  state.linhas = l.linhas.map(x => ({
-    texto: x.texto || '', alinhamento: x.alinhamento || 'centro',
-    fonte: x.fonte || 'normal', negrito: !!x.negrito, linha: !!x.linha
-  }));
-  document.getElementById('titulo').value = state.titulo;
-  render();
-  toast('Layout "' + name + '" aplicado');
+
+// layoutTabela: os 127 símbolos numa grade estilo tabuleiro de xadrez —
+// primeira coluna = letra (linhas a..i), primeira linha = número (1..14),
+// 14 colunas de símbolos por linha. Bordas com caracteres de traço.
+
+// renderSimbolosRef monta a tabela de referência no modal de ajuda
+// (grade igual à impressa: colunas 1..14, linhas A..I).
+function renderSimbolosRef() {
+  const box = document.getElementById('simbolos-ref');
+  if (!box) return;
+  const N = 14;
+  let html = '<table class="ref"><tr><th></th>';
+  for (let n = 1; n <= N; n++) html += '<th>' + n + '</th>';
+  html += '</tr>';
+  for (let i = 0; i < SIMBOLOS.length; i += N) {
+    html += '<tr><th>' + String.fromCharCode(65 + Math.floor(i / N)) + '</th>';
+    for (let j = 0; j < N; j++) {
+      const s = SIMBOLOS[i + j];
+      html += '<td title="Clique para copiar" onclick="copiarCelula(this)">' + (s ? s.c : '&nbsp;') + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  box.innerHTML = html;
 }
+
+// copiarCelula copia o caractere da célula clicada na tabela de referência.
+function copiarCelula(td) {
+  const c = td.textContent.trim();
+  copiarTexto(c, 'Caractere copiado: "' + c + '"');
+  td.classList.add('copied');
+  setTimeout(() => td.classList.remove('copied'), 600);
+}
+
+const SIMBOLOS = [{"c": "Ç", "d": "C cedilha maiuscula"}, {"c": "ü", "d": "u trema"}, {"c": "é", "d": "e agudo"}, {"c": "â", "d": "a circunflexo"}, {"c": "ã", "d": "a til"}, {"c": "à", "d": "a grave"}, {"c": "Á", "d": "A agudo maiuscula"}, {"c": "ç", "d": "c cedilha"}, {"c": "ê", "d": "e circunflexo"}, {"c": "Ê", "d": "E circunflexo maiuscula"}, {"c": "è", "d": "e grave"}, {"c": "Í", "d": "I agudo maiuscula"}, {"c": "Ô", "d": "O circunflexo maiuscula"}, {"c": "ì", "d": "i grave"}, {"c": "Ã", "d": "A til maiuscula"}, {"c": "Â", "d": "A circunflexo maiuscula"}, {"c": "É", "d": "E agudo maiuscula"}, {"c": "À", "d": "A grave maiuscula"}, {"c": "È", "d": "E grave maiuscula"}, {"c": "ô", "d": "o circunflexo"}, {"c": "õ", "d": "o til"}, {"c": "ò", "d": "o grave"}, {"c": "Ú", "d": "U agudo maiuscula"}, {"c": "ù", "d": "u grave"}, {"c": "Ì", "d": "I grave maiuscula"}, {"c": "Õ", "d": "O til maiuscula"}, {"c": "Ü", "d": "U trema maiuscula"}, {"c": "¢", "d": "centavo"}, {"c": "£", "d": "libra"}, {"c": "Ù", "d": "U grave maiuscula"}, {"c": "₧", "d": "peseta"}, {"c": "Ó", "d": "O agudo maiuscula"}, {"c": "á", "d": "a agudo"}, {"c": "í", "d": "i agudo"}, {"c": "ó", "d": "o agudo"}, {"c": "ú", "d": "u agudo"}, {"c": "ñ", "d": "n til"}, {"c": "Ñ", "d": "N til maiuscula"}, {"c": "ª", "d": "ordinal fem."}, {"c": "º", "d": "ordinal masc."}, {"c": "¿", "d": "interrogacao invertida"}, {"c": "Ò", "d": "O grave maiuscula"}, {"c": "¬", "d": "negacao"}, {"c": "½", "d": "um meio"}, {"c": "¼", "d": "um quarto"}, {"c": "¡", "d": "exclamacao invertida"}, {"c": "«", "d": "aspas esquerdas"}, {"c": "»", "d": "aspas direitas"}, {"c": "░", "d": "sombra clara"}, {"c": "▒", "d": "sombra media"}, {"c": "▓", "d": "sombra escura"}, {"c": "│", "d": "linha vertical"}, {"c": "┤", "d": "T p/ esquerda"}, {"c": "╡", "d": "T esq. dupla"}, {"c": "╢", "d": "traco misto"}, {"c": "╖", "d": "traco misto"}, {"c": "╕", "d": "traco misto"}, {"c": "╣", "d": "T esq. dupla"}, {"c": "║", "d": "vertical dupla"}, {"c": "╗", "d": "canto sup.dir. duplo"}, {"c": "╝", "d": "canto inf.dir. duplo"}, {"c": "╜", "d": "traco misto"}, {"c": "╛", "d": "traco misto"}, {"c": "┐", "d": "canto sup. direito"}, {"c": "└", "d": "canto inf. esquerdo"}, {"c": "┴", "d": "T p/ cima"}, {"c": "┬", "d": "T p/ baixo"}, {"c": "├", "d": "T p/ direita"}, {"c": "─", "d": "linha horizontal"}, {"c": "┼", "d": "cruz"}, {"c": "╞", "d": "T dir. dupla"}, {"c": "╟", "d": "traco misto"}, {"c": "╚", "d": "canto inf.esq. duplo"}, {"c": "╔", "d": "canto sup.esq. duplo"}, {"c": "╩", "d": "T cima dupla"}, {"c": "╦", "d": "T baixo dupla"}, {"c": "╠", "d": "T dir. dupla"}, {"c": "═", "d": "horizontal dupla"}, {"c": "╬", "d": "cruz dupla"}, {"c": "╧", "d": "traco misto"}, {"c": "╨", "d": "traco misto"}, {"c": "╤", "d": "traco misto"}, {"c": "╥", "d": "traco misto"}, {"c": "╙", "d": "traco misto"}, {"c": "╘", "d": "traco misto"}, {"c": "╒", "d": "traco misto"}, {"c": "╓", "d": "traco misto"}, {"c": "╫", "d": "traco misto"}, {"c": "╪", "d": "traco misto"}, {"c": "┘", "d": "canto inf. direito"}, {"c": "┌", "d": "canto sup. esquerdo"}, {"c": "█", "d": "bloco cheio"}, {"c": "▄", "d": "bloco baixo"}, {"c": "▌", "d": "bloco esquerda"}, {"c": "▐", "d": "bloco direita"}, {"c": "▀", "d": "bloco alto"}, {"c": "α", "d": "alfa"}, {"c": "ß", "d": "beta alema"}, {"c": "Γ", "d": "gama maiuscula"}, {"c": "π", "d": "pi"}, {"c": "Σ", "d": "sigma maiuscula"}, {"c": "σ", "d": "sigma"}, {"c": "µ", "d": "micro"}, {"c": "τ", "d": "tau"}, {"c": "Φ", "d": "fi maiuscula"}, {"c": "Θ", "d": "teta maiuscula"}, {"c": "Ω", "d": "omega"}, {"c": "δ", "d": "delta"}, {"c": "∞", "d": "infinito"}, {"c": "φ", "d": "fi"}, {"c": "ε", "d": "epsilon"}, {"c": "∩", "d": "intersecao"}, {"c": "≡", "d": "identico"}, {"c": "±", "d": "mais/menos"}, {"c": "≥", "d": "maior/igual"}, {"c": "≤", "d": "menor/igual"}, {"c": "⌠", "d": "integral sup."}, {"c": "⌡", "d": "integral inf."}, {"c": "÷", "d": "divisao"}, {"c": "≈", "d": "aprox."}, {"c": "°", "d": "grau"}, {"c": "∙", "d": "ponto pequeno"}, {"c": "•", "d": "ponto (bullet)"}, {"c": "√", "d": "raiz quadrada"}, {"c": "ⁿ", "d": "n sobrescrito"}, {"c": "²", "d": "ao quadrado"}, {"c": "■", "d": "quadrado preto"}];
+
+// ---- Exemplos: a lista e cada cupom vêm da API (GET /exemplos, GET /exemplos/{id}) ----
+// converte o cupom da API (formato do POST /print) em blocos do editor
+function cupomParaEditor(c) {
+  state.titulo = txt(c.titulo, 500);
+  state.linhas = (c.linhas || []).map(l => {
+    if (l.tipo === 'imagem') {
+      const o = { tipo: 'imagem', imagem: l.imagem };
+      for (const k of ['alinhamento', 'largura', 'brilho', 'contraste', 'meios_tons', 'nitidez', 'auto_contraste', 'inverter']) {
+        if (l[k] !== undefined) o[k] = l[k];
+      }
+      return o;
+    }
+    if (l.tipo === 'qr') {
+      const o = { tipo: 'qr', qr: l.qr || '', qr_tamanho: l.qr_tamanho || 14 };
+      if (l.alinhamento) o.alinhamento = l.alinhamento;
+      if (l.qr_modo && QR_TIPOS[l.qr_modo]) { // dica da Web UI: reabre o QR com o formulário do tipo
+        o.qr_modo = l.qr_modo;
+        o.qr_campos = Object.assign({}, l.qr_campos);
+        atualizaQr(o);
+      }
+      return o;
+    }
+    return { texto: l.texto || '', alinhamento: l.alinhamento || 'centro', fonte: l.fonte || 'normal', negrito: !!l.negrito, linha: !!l.linha };
+  });
+  if (!state.linhas.length) state.linhas = [{ texto: '', alinhamento: 'centro', fonte: 'normal', negrito: false, linha: false }];
+  document.getElementById('titulo').value = state.titulo;
+  document.getElementById('compactChk').checked = c.compact !== false;
+  sincCompacto();
+  render();
+}
+
+async function aplicarExemplo(sel) {
+  const id = sel.value;
+  sel.value = '';
+  if (!id) return;
+  try {
+    const r = await fetch('/exemplos/' + encodeURIComponent(id));
+    if (!r.ok) throw new Error(r.status);
+    cupomParaEditor(await r.json());
+    toast('Exemplo carregado — clique em Imprimir para testar');
+  } catch (e) {
+    toast('Não foi possível carregar o exemplo', true);
+  }
+}
+
+// monta o menu "Exemplos" (grupos = optgroup) a partir de GET /exemplos
+async function carregarListaExemplos() {
+  const sel = document.getElementById('exemplos');
+  try {
+    const lista = await (await fetch('/exemplos')).json();
+    const grupos = {};
+    lista.forEach(e => (grupos[e.grupo] = grupos[e.grupo] || []).push(e));
+    for (const g of Object.keys(grupos)) {
+      const og = document.createElement('optgroup');
+      og.label = g;
+      grupos[g].forEach(e => {
+        const o = document.createElement('option');
+        o.value = e.id; o.textContent = e.nome; o.title = e.descricao;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    }
+  } catch (e) {
+    sel.title = 'Não foi possível carregar a lista de exemplos';
+  }
+}
+
+
+
+
+
+
 
 function toast(msg, isErr) {
   const t = document.getElementById('toast');
@@ -990,8 +1486,214 @@ async function checkHealth() {
   }
 }
 
+
+// =====================================================================
+// Compartilhar: o cupom inteiro vai DENTRO do link (#c=...), sem servidor.
+// state -> JSON compacto (só campos não-padrão, chaves curtas) -> deflate-raw
+// (CompressionStream) -> base64url. Ao abrir o link o caminho inverso reconstrói
+// o editor. Nada do link é confiável: tudo é validado/limitado ao carregar.
+// =====================================================================
+const LIMITE_LINK_AVISO = 2000;      // acima disso, apps de mensagem podem cortar o link
+const LIMITE_LINK_MAX = 1500000;     // acima disso o navegador/servidor recusam
+const LIMITE_DESCOMPRIMIDO = 12 * 1024 * 1024; // proteção contra "zip bomb"
+const ALIN_OK = ['esquerda', 'centro', 'direita'];
+const MIME_IMG = /^image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+\/]+=*$/;
+
+function bytesParaB64url(u8) {
+  let b = '';
+  for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlParaBytes(t) {
+  const b = atob(t.replace(/-/g, '+').replace(/_/g, '/'));
+  const u8 = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) u8[i] = b.charCodeAt(i);
+  return u8;
+}
+
+// serializa o editor (state) no formato compacto; semImagens omite os blocos de imagem
+function estadoParaCompacto(semImagens) {
+  const l = [];
+  for (const b of state.linhas) {
+    if (b.tipo === 'imagem') {
+      if (semImagens || !b.imagem) continue;
+      const o = { k: 'I', d: b.imagem.replace(/^data:/, '') };
+      if (b.alinhamento && b.alinhamento !== 'centro') o.a = b.alinhamento;
+      Object.assign(o, paramsImagem(b)); // só os ajustes diferentes do padrão
+      l.push(o);
+    } else if (b.tipo === 'qr') {
+      const o = { k: 'Q' };
+      const modo = b.qr_modo || 'texto';
+      if (modo === 'texto') o.q = b.qr || '';
+      else { o.m = modo; o.f = b.qr_campos || {}; } // só os campos: o conteúdo é recalculado ao abrir
+      if (b.qr_tamanho && b.qr_tamanho !== 14) o.z = b.qr_tamanho;
+      if (b.alinhamento && b.alinhamento !== 'centro') o.a = b.alinhamento;
+      l.push(o);
+    } else if (b.tipo === 'lista') {
+      const o = { k: 'L', i: b.itens };
+      if (b.marcador === 'checkbox') o.m = 'c';
+      const marc = Object.keys(b.marcados || {}).filter(j => b.marcados[j]).map(Number);
+      if (marc.length) o.x = marc;
+      l.push(o);
+    } else {
+      const o = { x: b.texto || '' };
+      if (b.alinhamento && b.alinhamento !== 'centro') o.a = b.alinhamento;
+      if (b.fonte === 'larga') o.f = 'l';
+      if (b.negrito) o.n = 1;
+      if (b.linha) o.i = 1;
+      l.push(o);
+    }
+  }
+  const raiz = { v: 1, l };
+  if (state.titulo) raiz.t = state.titulo;
+  if (!document.getElementById('compactChk').checked) raiz.c = 0;
+  return raiz;
+}
+
+async function gerarLink(semImagens) {
+  const bytes = new TextEncoder().encode(JSON.stringify(estadoParaCompacto(semImagens)));
+  let payload;
+  if (typeof CompressionStream === 'function') {
+    const cs = new CompressionStream('deflate-raw');
+    const w = cs.writable.getWriter();
+    w.write(bytes); w.close();
+    payload = 'z' + bytesParaB64url(new Uint8Array(await new Response(cs.readable).arrayBuffer()));
+  } else {
+    payload = 'r' + bytesParaB64url(bytes); // navegador sem CompressionStream: sem compressão
+  }
+  return location.origin + location.pathname + '#c=' + payload;
+}
+
+async function copiarLink(link, msgOk) {
+  try { await navigator.clipboard.writeText(link); toast(msgOk); }
+  catch (e) { copiarTexto(link, msgOk); } // http na rede local: clipboard API indisponível
+}
+
+async function compartilhar(semImagens) {
+  const aviso = document.getElementById('shareMsg');
+  aviso.hidden = true;
+  const temImagem = state.linhas.some(b => b.tipo === 'imagem' && b.imagem);
+  const link = await gerarLink(!!semImagens);
+  if (link.length > LIMITE_LINK_MAX) {
+    toast('Link grande demais (' + link.length.toLocaleString('pt-BR') + ' caracteres): remova ou reduza as imagens', true);
+    return;
+  }
+  await copiarLink(link, 'Link copiado (' + link.length.toLocaleString('pt-BR') + ' caracteres)');
+  if (link.length > LIMITE_LINK_AVISO) {
+    const sem = temImagem && !semImagens ? await gerarLink(true) : null;
+    aviso.innerHTML = '<span>⚠️ O link tem <b>' + link.length.toLocaleString('pt-BR') + '</b> caracteres (acima de ' +
+      LIMITE_LINK_AVISO.toLocaleString('pt-BR') + '): apps de mensagem e e-mail podem cortá-lo ou recusá-lo. ' +
+      (sem ? 'As imagens ocupam ' + (link.length - sem.length).toLocaleString('pt-BR') + ' caracteres.' : '') + '</span>' +
+      (sem ? '<button onclick="compartilhar(true)">Copiar sem imagens (' + sem.length.toLocaleString('pt-BR') + ')</button>' : '');
+    aviso.hidden = false;
+  }
+}
+
+// ---- carregar: valida TUDO (o link vem de fora) ----
+const txt = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+const inteiro = (v, min, max) => Math.max(min, Math.min(max, parseInt(v, 10) || 0));
+
+function compactoParaBlocos(raiz) {
+  if (!raiz || typeof raiz !== 'object' || raiz.v !== 1 || !Array.isArray(raiz.l)) throw new Error('formato');
+  const out = [];
+  for (const b of raiz.l.slice(0, 200)) {
+    if (!b || typeof b !== 'object') continue;
+    const alin = ALIN_OK.includes(b.a) ? b.a : undefined;
+    if (b.k === 'I') {
+      const img = typeof b.d === 'string' && MIME_IMG.test(b.d) ? 'data:' + b.d : '';
+      if (!img) continue;
+      const l = { tipo: 'imagem', imagem: img };
+      if (alin) l.alinhamento = alin;
+      if (b.largura) l.largura = inteiro(b.largura, 0, 576);
+      for (const k of ['brilho', 'contraste', 'meios_tons']) if (b[k]) l[k] = inteiro(b[k], -100, 100);
+      if (b.nitidez !== undefined) l.nitidez = inteiro(b.nitidez, 0, 100);
+      if (b.auto_contraste === false) l.auto_contraste = false;
+      if (b.inverter === true) l.inverter = true;
+      out.push(l);
+    } else if (b.k === 'Q') {
+      const modo = Object.prototype.hasOwnProperty.call(QR_TIPOS, b.m) ? b.m : 'texto';
+      const l = { tipo: 'qr', qr: '', qr_tamanho: inteiro(b.z || 14, 3, 23) };
+      if (alin) l.alinhamento = alin;
+      if (modo === 'texto') l.qr = txt(b.q, 4000);
+      else {
+        l.qr_modo = modo;
+        l.qr_campos = {};
+        for (const c of QR_TIPOS[modo].campos) if (b.f && typeof b.f[c.k] === 'string') l.qr_campos[c.k] = b.f[c.k].slice(0, 2000);
+        atualizaQr(l);
+      }
+      out.push(l);
+    } else if (b.k === 'L') {
+      const itens = Array.isArray(b.i) ? b.i.slice(0, 200).map(i => txt(i, 500)) : [''];
+      const marcados = {};
+      (Array.isArray(b.x) ? b.x : []).forEach(j => { if (Number.isInteger(j) && j >= 0 && j < itens.length) marcados[j] = true; });
+      out.push({ tipo: 'lista', itens: itens.length ? itens : [''], marcador: b.m === 'c' ? 'checkbox' : 'bullet', marcados });
+    } else {
+      out.push({ texto: txt(b.x, 2000), alinhamento: alin || 'centro', fonte: b.f === 'l' ? 'larga' : 'normal', negrito: b.n === 1, linha: b.i === 1 });
+    }
+  }
+  return out;
+}
+
+async function lerPayload(p) {
+  let bytes = b64urlParaBytes(p.slice(1));
+  if (p[0] === 'z') {
+    const ds = new DecompressionStream('deflate-raw');
+    const w = ds.writable.getWriter();
+    w.write(bytes).catch(() => {}); w.close().catch(() => {});
+    const r = ds.readable.getReader();
+    const partes = []; let total = 0;
+    for (;;) {
+      const { done, value } = await r.read();
+      if (done) break;
+      total += value.length;
+      if (total > LIMITE_DESCOMPRIMIDO) { r.cancel(); throw new Error('grande demais'); }
+      partes.push(value);
+    }
+    bytes = new Uint8Array(total);
+    let off = 0; partes.forEach(pt => { bytes.set(pt, off); off += pt.length; });
+  } else if (p[0] !== 'r') throw new Error('formato');
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+async function carregarDoLink() {
+  const m = /^#c=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if (!m) return;
+  try {
+    const raiz = await lerPayload(m[1]);
+    const blocos = compactoParaBlocos(raiz);
+    state.titulo = txt(raiz.t, 500);
+    state.linhas = blocos.length ? blocos : [{ texto: '', alinhamento: 'centro', fonte: 'normal', negrito: false, linha: false }];
+    document.getElementById('titulo').value = state.titulo;
+    document.getElementById('compactChk').checked = raiz.c !== 0;
+    sincCompacto();
+    render();
+    toast('Cupom carregado do link (nada foi impresso)');
+  } catch (e) {
+    toast('Link inválido ou corrompido', true);
+  }
+  history.replaceState(null, '', location.pathname + location.search); // limpa o #c=... da barra
+}
+window.addEventListener('hashchange', carregarDoLink);
+
+// ---- corte: Rente | Com respiro (o checkbox oculto #compactChk guarda o estado) ----
+function setCompacto(on) {
+  document.getElementById('compactChk').checked = on;
+  render();
+  sincCompacto();
+}
+function sincCompacto() {
+  const on = document.getElementById('compactChk').checked;
+  document.querySelector('[data-cmp="segOn"]').classList.toggle('on', on);
+  document.querySelector('[data-cmp="segOff"]').classList.toggle('on', !on);
+}
+document.getElementById('compactChk').addEventListener('change', sincCompacto);
+
 addLine();
 render();
+sincCompacto();
+renderSimbolosRef();
+carregarListaExemplos();
+carregarDoLink();
 checkHealth();
 setInterval(checkHealth, 5000);
 

@@ -191,11 +191,11 @@ func TestQrParaGSv0(t *testing.T) {
 	if !bytes.HasPrefix(out, []byte{0x1d, 0x76, 0x30, 0x00}) {
 		t.Fatalf("QR deveria começar com GS v 0, veio %x", out[:4])
 	}
-	// quadrado: largura em bytes == ceil(altura/8)  (largura em dots == altura)
+	// quadrado + margem inferior: altura = largura em dots + qrMargemInferior
 	wBytes := int(out[4]) | int(out[5])<<8
 	hDots := int(out[6]) | int(out[7])<<8
-	if wBytes != (hDots+7)/8 {
-		t.Fatalf("QR deveria ser quadrado: %d bytes de largura vs %d dots de altura", wBytes, hDots)
+	if wBytes != (hDots-qrMargemInferior+7)/8 {
+		t.Fatalf("QR deveria ser quadrado + margem: %d bytes de largura vs %d dots de altura", wBytes, hDots)
 	}
 	// total de bytes da imagem = largura em bytes x altura em dots
 	if len(out)-8 != wBytes*hDots {
@@ -227,34 +227,33 @@ func TestQrFinderPattern(t *testing.T) {
 		t.Fatal(err)
 	}
 	hDots := int(out[6]) | int(out[7])<<8
-	wDots := hDots // quadrado: largura em dots == altura
+	wDots := hDots - qrMargemInferior // quadrado: largura em dots == altura sem a margem
 	bits := decodeGsv0(out[8:], wDots, hDots)
 
-	// largura = (n + 8) * mod -> n = módulos do QR (sem quiet zone), mod = 4
+	// sem quiet zone: largura = n * mod, mod = 4
 	mod := 4
-	totalMod := hDots / mod
-	n := totalMod - 8
+	n := wDots / mod
 	if n < 21 {
 		t.Fatalf("tamanho do QR inesperado (versão muito pequena): %d módulos", n)
 	}
 
-	// finder pattern fica nos módulos [4..10] (quiet zone 4 + 7 de finder)
+	// finder pattern fica nos módulos [0..6] (7 de finder, sem quiet zone)
 	// conversão módulo -> pixel: pixel = módulo * mod (canto superior esquerdo)
 	get := func(my, mx int) bool { return bits[my*mod][mx*mod] }
 	// canto e centro do finder
-	if !get(4, 4) {
+	if !get(0, 0) {
 		t.Fatal("canto superior esquerdo do finder deveria ser preto")
 	}
-	if !get(4, 10) {
+	if !get(0, 6) {
 		t.Fatal("canto superior direito do finder deveria ser preto")
 	}
-	if !get(10, 4) {
+	if !get(6, 0) {
 		t.Fatal("canto inferior esquerdo do finder deveria ser preto")
 	}
-	if !get(7, 7) { // centro do finder (3x3 preto)
+	if !get(3, 3) { // centro do finder (3x3 preto)
 		t.Fatal("centro do finder deveria ser preto")
 	}
-	if get(5, 5) { // anel branco interno
+	if get(1, 1) { // anel branco interno
 		t.Fatal("anel interno do finder deveria ser branco")
 	}
 }
@@ -320,5 +319,187 @@ func TestMontarCupomTipoDesconhecidoViraTexto(t *testing.T) {
 	}
 	if !bytes.Contains(out, []byte("oi")) {
 		t.Fatal("tipo texto deveria imprimir o texto")
+	}
+}
+
+// true = dot preto: pixel escuro deve virar tinta, claro deve ficar branco
+// (regressão: os dithers estavam com a polaridade invertida na impressão).
+func TestDitherPolaridade(t *testing.T) {
+	const w, h = 16, 16
+	mk := func(v uint8) [][]uint8 {
+		g := make([][]uint8, h)
+		for y := range g {
+			g[y] = make([]uint8, w)
+			for x := range g[y] {
+				g[y][x] = v
+			}
+		}
+		return g
+	}
+	conta := func(bits []bool) (n int) {
+		for _, b := range bits {
+			if b {
+				n++
+			}
+		}
+		return
+	}
+	for nome, fn := range map[string]func([][]uint8) []bool{"atkinson": ditherAtkinson} {
+		if n := conta(fn(mk(0))); n != w*h {
+			t.Errorf("%s: preto puro deveria ser 100%% tinta, veio %d/%d", nome, n, w*h)
+		}
+		if n := conta(fn(mk(255))); n != 0 {
+			t.Errorf("%s: branco puro não deveria ter tinta, veio %d", nome, n)
+		}
+		if n := conta(fn(mk(128))); n < w*h/4 || n > w*h*3/4 {
+			t.Errorf("%s: cinza médio deveria ter ~50%% de tinta, veio %d/%d", nome, n, w*h)
+		}
+	}
+}
+
+func TestQrModulosEModuloGrande(t *testing.T) {
+	n, err := qrModulos("https://www.google.com")
+	if err != nil || n != 25 {
+		t.Fatalf("QR do google deveria ter 25 módulos sem borda, veio %d (%v)", n, err)
+	}
+	// módulos acima de 8 agora são aceitos (até o que cabe nos 576 dots)
+	if m := qrModulo(25, 20); m != 20 {
+		t.Fatalf("módulo 20 deveria caber (25*20=500 dots), veio %d", m)
+	}
+	if m := qrModulo(25, 30); m != 23 {
+		t.Fatalf("módulo 30 deveria ser reduzido a 23 (576/25), veio %d", m)
+	}
+}
+
+// o preview "como será impresso" deve mostrar escuro = preto e claro = branco.
+func TestImagemPreviewPNG(t *testing.T) {
+	img := image.NewGray(image.Rect(0, 0, 16, 16))
+	for y := 0; y < 16; y++ {
+		for x := 0; x < 16; x++ {
+			if x < 8 {
+				img.SetGray(x, y, color.Gray{Y: 0}) // metade esquerda preta
+			} else {
+				img.SetGray(x, y, color.Gray{Y: 255}) // metade direita branca
+			}
+		}
+	}
+	for _, d := range []string{"atkinson"} {
+		out, _, err := imagemPreviewPNG(img, AjustesImagem{}, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dec, err := png.Decode(bytes.NewReader(out))
+		if err != nil {
+			t.Fatalf("%s: PNG inválido: %v", d, err)
+		}
+		if r, _, _, _ := dec.At(2, 2).RGBA(); r != 0 {
+			t.Errorf("%s: lado escuro deveria ser preto", d)
+		}
+		if r, _, _, _ := dec.At(12, 2).RGBA(); r == 0 {
+			t.Errorf("%s: lado claro deveria ser branco", d)
+		}
+	}
+}
+
+func imgCinza(w, h int, v uint8) image.Image {
+	img := image.NewGray(image.Rect(0, 0, w, h))
+	for i := range img.Pix {
+		img.Pix[i] = v
+	}
+	return img
+}
+
+func tinta(bits []bool) (n int) {
+	for _, b := range bits {
+		if b {
+			n++
+		}
+	}
+	return
+}
+
+func TestAjustesBrilhoInverterLargura(t *testing.T) {
+	semAuto := false
+	base := AjustesImagem{AutoContraste: &semAuto}
+	cinza := imgCinza(64, 64, 100)
+
+	b0, _, _, _ := imagemParaBits(cinza, base)
+	claro := base
+	claro.Brilho = 100
+	b1, _, _, _ := imagemParaBits(cinza, claro)
+	if tinta(b1) >= tinta(b0) {
+		t.Errorf("brilho +100 deveria diminuir a tinta: %d -> %d", tinta(b0), tinta(b1))
+	}
+	escuro := base
+	escuro.Brilho = -100
+	b2, _, _, _ := imagemParaBits(cinza, escuro)
+	if tinta(b2) <= tinta(b0) {
+		t.Errorf("brilho -100 deveria aumentar a tinta: %d -> %d", tinta(b0), tinta(b2))
+	}
+	inv := base
+	inv.Inverter = true
+	b3, _, _, _ := imagemParaBits(imgCinza(64, 64, 0), inv)
+	if tinta(b3) != 0 {
+		t.Errorf("preto invertido deveria ser branco puro, veio %d dots de tinta", tinta(b3))
+	}
+	// largura pedida (amplia e reduz), sempre limitada ao papel
+	for _, c := range []struct{ pedido, esperado int }{{200, 200}, {32, 32}, {9999, dotWidth}, {0, 64}} {
+		aj := base
+		aj.Largura = c.pedido
+		_, w, _, err := imagemParaBits(cinza, aj)
+		if err != nil || w != c.esperado {
+			t.Errorf("largura %d: esperado %d dots, veio %d (%v)", c.pedido, c.esperado, w, err)
+		}
+	}
+}
+
+func TestImagemTransparenteViraBranco(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 32, 32)) // totalmente transparente
+	bits, _, _, err := imagemParaBits(img, AjustesImagem{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := tinta(bits); n != 0 {
+		t.Errorf("fundo transparente deveria imprimir branco, veio %d dots de tinta", n)
+	}
+}
+
+// o QR não pode terminar rente ao corte/texto seguinte: sobram linhas brancas embaixo.
+func TestQrTemMargemInferiorEmBranco(t *testing.T) {
+	out, err := qrParaGSv0("https://exemplo.com", 4, "esquerda")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wBytes := int(out[4]) | int(out[5])<<8
+	hDots := int(out[6]) | int(out[7])<<8
+	for _, b := range out[8+wBytes*(hDots-qrMargemInferior):] {
+		if b != 0 {
+			t.Fatal("as linhas finais do QR deveriam ser brancas")
+		}
+	}
+	// a última linha com tinta tem que estar acima da margem
+	if !bytes.Contains(out[8+wBytes*(hDots-qrMargemInferior-4):8+wBytes*(hDots-qrMargemInferior)], []byte{0xff}) {
+		t.Fatal("o QR deveria terminar logo antes da margem")
+	}
+}
+
+// qr_tamanho fora do intervalo não dá erro: é ajustado para 3..23 (0 = padrão 4).
+func TestQrModuloLimitaSemErro(t *testing.T) {
+	for _, c := range []struct{ pedido, esperado int }{
+		{0, 14}, {-5, 3}, {1, 3}, {2, 3}, {3, 3}, {10, 10}, {23, 23}, {24, 23}, {99, 23},
+	} {
+		if m := qrModulo(21, c.pedido); m != c.esperado {
+			t.Errorf("qr_tamanho %d: esperado módulo %d, veio %d", c.pedido, c.esperado, m)
+		}
+	}
+	// QR grande: reduz para caber, mas nunca abaixo de 3 (maior QR = 177 módulos)
+	if m := qrModulo(177, 23); m != 3 {
+		t.Errorf("QR de 177 módulos deveria caber com módulo 3, veio %d", m)
+	}
+	if _, err := qrParaGSv0("https://exemplo.com", 99, "centro"); err != nil {
+		t.Errorf("qr_tamanho 99 não deveria dar erro: %v", err)
+	}
+	if _, err := qrParaGSv0("https://exemplo.com", 1, "centro"); err != nil {
+		t.Errorf("qr_tamanho 1 não deveria dar erro: %v", err)
 	}
 }

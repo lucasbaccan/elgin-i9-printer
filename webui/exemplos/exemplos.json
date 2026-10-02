@@ -1,0 +1,1145 @@
+[
+  {
+    "id": "teste",
+    "grupo": "Cupons",
+    "nome": "Teste",
+    "descricao": "Acentos, símbolos, os três alinhamentos, fonte larga e negrito: bom para conferir a code page e o alinhamento.",
+    "cupom": {
+      "titulo": "*** MENSAGEM SECRETA ***",
+      "linhas": [
+        {
+          "texto": "=",
+          "alinhamento": "esquerda",
+          "linha": true
+        },
+        {
+          "texto": "Acentos: ç ã é ô õ à",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "Símbolos: √ ≈ ≤ ≥ ∞ Ω π µ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "Texto à esquerda",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "Texto centralizado"
+        },
+        {
+          "texto": "Texto à direita",
+          "alinhamento": "direita"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "Fonte larga + negrito",
+          "fonte": "larga",
+          "negrito": true
+        },
+        {
+          "texto": "=",
+          "alinhamento": "esquerda",
+          "linha": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "pedido",
+    "grupo": "Cupons",
+    "nome": "Pedido",
+    "descricao": "Cupom de pedido com itens, linha separadora e total em fonte larga.",
+    "cupom": {
+      "titulo": "PEDIDO #123",
+      "linhas": [
+        {
+          "texto": "-X-",
+          "alinhamento": "esquerda",
+          "linha": true
+        },
+        {
+          "texto": "1x Hamburguer",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "2x Refrigerante",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "1x Batata Frita",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "TOTAL: R$ 45,00",
+          "alinhamento": "direita",
+          "fonte": "larga",
+          "negrito": true
+        },
+        {
+          "texto": "-X-",
+          "alinhamento": "esquerda",
+          "linha": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "etiqueta",
+    "grupo": "Cupons",
+    "nome": "Etiqueta",
+    "descricao": "Etiqueta simples com destino, conteúdo e prioridade.",
+    "cupom": {
+      "titulo": "ETIQUETA",
+      "linhas": [
+        {
+          "texto": "Destino: Mesa 7",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "Conteudo: FRAGIL",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "Prioridade: ALTA"
+        },
+        {
+          "texto": "-",
+          "alinhamento": "esquerda",
+          "linha": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "moldura",
+    "grupo": "Cupons",
+    "nome": "Moldura",
+    "descricao": "Mensagem centralizada entre duas linhas de asteriscos.",
+    "cupom": {
+      "linhas": [
+        {
+          "texto": "*",
+          "alinhamento": "esquerda",
+          "linha": true
+        },
+        {
+          "texto": "MENSAGEM"
+        },
+        {
+          "texto": "COM MOLDURA"
+        },
+        {
+          "texto": "*",
+          "alinhamento": "esquerda",
+          "linha": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-google",
+    "grupo": "QR Code",
+    "nome": "URL (google.com)",
+    "descricao": "QR de uma URL (https://www.google.com), com legenda.",
+    "cupom": {
+      "titulo": "QR CODE",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 6
+        },
+        {
+          "texto": "www.google.com"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-wifi",
+    "grupo": "QR Code",
+    "nome": "Wi-Fi",
+    "descricao": "QR de Wi-Fi (WIFI:T:WPA;S:…;P:…): o celular oferece conectar à rede.",
+    "cupom": {
+      "titulo": "QR WI-FI",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "WIFI:T:WPA;S:CafeExemplo;P:senha1234;H:false;;",
+          "qr_tamanho": 5,
+          "qr_modo": "wifi",
+          "qr_campos": {
+            "ssid": "CafeExemplo",
+            "senha": "senha1234",
+            "tipo": "WPA",
+            "oculta": "false"
+          }
+        },
+        {
+          "texto": "Wi-Fi: CafeExemplo"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-whatsapp",
+    "grupo": "QR Code",
+    "nome": "WhatsApp",
+    "descricao": "QR que abre uma conversa no WhatsApp com mensagem pronta (https://wa.me/…).",
+    "cupom": {
+      "titulo": "QR WHATSAPP",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "https://wa.me/5511999999999?text=Ol%C3%A1!%20Vim%20pelo%20cupom.",
+          "qr_tamanho": 5,
+          "qr_modo": "whatsapp",
+          "qr_campos": {
+            "fone": "5511999999999",
+            "msg": "Olá! Vim pelo cupom."
+          }
+        },
+        {
+          "texto": "Fale conosco no WhatsApp"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-contato",
+    "grupo": "QR Code",
+    "nome": "Contato (vCard)",
+    "descricao": "QR de cartão de contato (vCard): o celular oferece salvar o contato.",
+    "cupom": {
+      "titulo": "QR CONTATO (VCARD)",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "BEGIN:VCARD\nVERSION:3.0\nFN:Maria Silva\nN:Maria Silva;;;;\nORG:Empresa Exemplo\nTITLE:Gerente\nTEL:+5511999999999\nEMAIL:maria@exemplo.com\nURL:https://exemplo.com\nEND:VCARD",
+          "qr_tamanho": 4,
+          "qr_modo": "contato",
+          "qr_campos": {
+            "nome": "Maria Silva",
+            "fone": "+5511999999999",
+            "email": "maria@exemplo.com",
+            "org": "Empresa Exemplo",
+            "cargo": "Gerente",
+            "site": "https://exemplo.com"
+          }
+        },
+        {
+          "texto": "Salve o contato"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-email",
+    "grupo": "QR Code",
+    "nome": "E-mail",
+    "descricao": "QR que abre um e-mail pronto (mailto:) com assunto e mensagem.",
+    "cupom": {
+      "titulo": "QR E-MAIL",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "mailto:contato@exemplo.com?subject=Contato%20pelo%20cupom&body=Ol%C3%A1%2C%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es.",
+          "qr_tamanho": 4,
+          "qr_modo": "email",
+          "qr_campos": {
+            "para": "contato@exemplo.com",
+            "assunto": "Contato pelo cupom",
+            "corpo": "Olá, gostaria de mais informações."
+          }
+        },
+        {
+          "texto": "Envie um e-mail"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-telefone",
+    "grupo": "QR Code",
+    "nome": "Telefone",
+    "descricao": "QR que inicia uma ligação (tel:).",
+    "cupom": {
+      "titulo": "QR TELEFONE",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "tel:+5511999999999",
+          "qr_tamanho": 5,
+          "qr_modo": "telefone",
+          "qr_campos": {
+            "fone": "+5511999999999"
+          }
+        },
+        {
+          "texto": "Ligue para +55 11 99999-9999"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-sms",
+    "grupo": "QR Code",
+    "nome": "SMS",
+    "descricao": "QR que abre um SMS pronto (SMSTO:).",
+    "cupom": {
+      "titulo": "QR SMS",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "SMSTO:+5511999999999:Quero receber novidades",
+          "qr_tamanho": 5,
+          "qr_modo": "sms",
+          "qr_campos": {
+            "fone": "+5511999999999",
+            "msg": "Quero receber novidades"
+          }
+        },
+        {
+          "texto": "Envie um SMS"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-geo",
+    "grupo": "QR Code",
+    "nome": "Localização",
+    "descricao": "QR de coordenadas (geo:) que abre no app de mapas.",
+    "cupom": {
+      "titulo": "QR LOCALIZAÇÃO",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "geo:-23.5505,-46.6333",
+          "qr_tamanho": 5,
+          "qr_modo": "geo",
+          "qr_campos": {
+            "lat": "-23.5505",
+            "lng": "-46.6333"
+          }
+        },
+        {
+          "texto": "Praça da Sé - São Paulo"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-evento",
+    "grupo": "QR Code",
+    "nome": "Evento (iCal)",
+    "descricao": "QR de evento de agenda (iCal) com datas, local, descrição e link de reunião.",
+    "cupom": {
+      "titulo": "QR EVENTO (ICAL)",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Reunião de equipe\nDTSTART:20261015T140000\nDTEND:20261015T150000\nLOCATION:Sala 3\nDESCRIPTION:Pauta: resultados do mês e próximos passos.\\nLink: https://meet.google.com/abc-defg-hij\nURL:https://meet.google.com/abc-defg-hij\nEND:VEVENT\nEND:VCALENDAR",
+          "qr_tamanho": 4,
+          "qr_modo": "evento",
+          "qr_campos": {
+            "titulo": "Reunião de equipe",
+            "inicio": "2026-10-15T14:00",
+            "fim": "2026-10-15T15:00",
+            "local": "Sala 3",
+            "descricao": "Pauta: resultados do mês e próximos passos.",
+            "link": "https://meet.google.com/abc-defg-hij"
+          }
+        },
+        {
+          "texto": "Adicionar à agenda"
+        }
+      ]
+    }
+  },
+  {
+    "id": "qr-pix",
+    "grupo": "QR Code",
+    "nome": "PIX",
+    "descricao": "QR de PIX (BR Code estático): chave, nome, cidade, valor e identificador. A chave do exemplo é fictícia.",
+    "cupom": {
+      "titulo": "QR PIX",
+      "linhas": [
+        {
+          "tipo": "qr",
+          "qr": "00020101021226370014br.gov.bcb.pix0115exemplo@pix.com520400005303986540510.005802BR5912LOJA EXEMPLO6009SAO PAULO62120508EXEMPLO163042840",
+          "qr_tamanho": 4,
+          "qr_modo": "pix",
+          "qr_campos": {
+            "chave": "exemplo@pix.com",
+            "nome": "Loja Exemplo",
+            "cidade": "Sao Paulo",
+            "valor": "10,00",
+            "txid": "EXEMPLO1"
+          }
+        },
+        {
+          "texto": "Pague com PIX - R$ 10,00"
+        }
+      ]
+    }
+  },
+  {
+    "id": "regua-qr",
+    "grupo": "QR Code",
+    "nome": "Régua de tamanhos de QR",
+    "descricao": "6 QR de tamanhos crescentes (módulo 3 a 22) encostados na esquerda, cada um com uma régua de 48 colunas embaixo: para medir o tamanho real impresso.",
+    "cupom": {
+      "titulo": "REGUA DE QR",
+      "linhas": [
+        {
+          "texto": "módulo 3 (75 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 3,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "módulo 5 (125 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 5,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "módulo 8 (200 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 8,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "módulo 12 (300 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 12,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "módulo 16 (400 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 16,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        },
+        {
+          "texto": "módulo 22 (550 dots)",
+          "alinhamento": "esquerda",
+          "negrito": true
+        },
+        {
+          "tipo": "qr",
+          "qr": "https://www.google.com",
+          "qr_tamanho": 22,
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "         1         2         3         4        ",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123456789012345678901234567890123456789012345678",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": ""
+        }
+      ]
+    }
+  },
+  {
+    "id": "degrade",
+    "grupo": "Imagem",
+    "nome": "Imagem com degradê",
+    "descricao": "Imagem colorida (arco-íris com vinheta e faixa de cinzas) para ver como o dither trata cores e tons.",
+    "cupom": {
+      "titulo": "TESTE DE DEGRADE",
+      "linhas": [
+        {
+          "tipo": "imagem",
+          "imagem": "@degrade.png"
+        }
+      ]
+    }
+  },
+  {
+    "id": "test-grayscale",
+    "grupo": "Imagem",
+    "nome": "Degradê de 16 tons (test-grayscale)",
+    "descricao": "A imagem de GET /test-grayscale: 16 blocos de cinza, do branco ao preto, para contar quantos tons a impressora distingue.",
+    "cupom": {
+      "titulo": "TESTE DE CINZA",
+      "linhas": [
+        {
+          "tipo": "imagem",
+          "imagem": "@test-grayscale"
+        }
+      ]
+    }
+  },
+  {
+    "id": "simbolos",
+    "grupo": "Símbolos",
+    "nome": "Símbolos",
+    "descricao": "Todos os caracteres da code page CP860, um por linha, para ver quais a impressora aceita de verdade.",
+    "cupom": {
+      "titulo": "SIMBOLOS CP860 (1-127)",
+      "linhas": [
+        {
+          "texto": "1 'Ç' C cedilha maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "2 'ü' u trema",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "3 'é' e agudo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "4 'â' a circunflexo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "5 'ã' a til",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "6 'à' a grave",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "7 'Á' A agudo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "8 'ç' c cedilha",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "9 'ê' e circunflexo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "10 'Ê' E circunflexo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "11 'è' e grave",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "12 'Í' I agudo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "13 'Ô' O circunflexo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "14 'ì' i grave",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "15 'Ã' A til maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "16 'Â' A circunflexo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "17 'É' E agudo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "18 'À' A grave maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "19 'È' E grave maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "20 'ô' o circunflexo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "21 'õ' o til",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "22 'ò' o grave",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "23 'Ú' U agudo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "24 'ù' u grave",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "25 'Ì' I grave maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "26 'Õ' O til maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "27 'Ü' U trema maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "28 '¢' centavo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "29 '£' libra",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "30 'Ù' U grave maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "31 '₧' peseta",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "32 'Ó' O agudo maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "33 'á' a agudo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "34 'í' i agudo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "35 'ó' o agudo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "36 'ú' u agudo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "37 'ñ' n til",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "38 'Ñ' N til maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "39 'ª' ordinal fem.",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "40 'º' ordinal masc.",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "41 '¿' interrogacao invertida",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "42 'Ò' O grave maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "43 '¬' negacao",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "44 '½' um meio",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "45 '¼' um quarto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "46 '¡' exclamacao invertida",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "47 '«' aspas esquerdas",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "48 '»' aspas direitas",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "49 '░' sombra clara",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "50 '▒' sombra media",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "51 '▓' sombra escura",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "52 '│' linha vertical",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "53 '┤' T p/ esquerda",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "54 '╡' T esq. dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "55 '╢' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "56 '╖' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "57 '╕' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "58 '╣' T esq. dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "59 '║' vertical dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "60 '╗' canto sup.dir. duplo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "61 '╝' canto inf.dir. duplo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "62 '╜' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "63 '╛' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "64 '┐' canto sup. direito",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "65 '└' canto inf. esquerdo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "66 '┴' T p/ cima",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "67 '┬' T p/ baixo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "68 '├' T p/ direita",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "69 '─' linha horizontal",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "70 '┼' cruz",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "71 '╞' T dir. dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "72 '╟' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "73 '╚' canto inf.esq. duplo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "74 '╔' canto sup.esq. duplo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "75 '╩' T cima dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "76 '╦' T baixo dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "77 '╠' T dir. dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "78 '═' horizontal dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "79 '╬' cruz dupla",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "80 '╧' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "81 '╨' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "82 '╤' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "83 '╥' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "84 '╙' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "85 '╘' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "86 '╒' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "87 '╓' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "88 '╫' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "89 '╪' traco misto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "90 '┘' canto inf. direito",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "91 '┌' canto sup. esquerdo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "92 '█' bloco cheio",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "93 '▄' bloco baixo",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "94 '▌' bloco esquerda",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "95 '▐' bloco direita",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "96 '▀' bloco alto",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "97 'α' alfa",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "98 'ß' beta alema",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "99 'Γ' gama maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "100 'π' pi",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "101 'Σ' sigma maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "102 'σ' sigma",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "103 'µ' micro",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "104 'τ' tau",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "105 'Φ' fi maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "106 'Θ' teta maiuscula",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "107 'Ω' omega",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "108 'δ' delta",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "109 '∞' infinito",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "110 'φ' fi",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "111 'ε' epsilon",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "112 '∩' intersecao",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "113 '≡' identico",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "114 '±' mais/menos",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "115 '≥' maior/igual",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "116 '≤' menor/igual",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "117 '⌠' integral sup.",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "118 '⌡' integral inf.",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "119 '÷' divisao",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "120 '≈' aprox.",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "121 '°' grau",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "122 '∙' ponto pequeno",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "123 '•' ponto (bullet)",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "124 '√' raiz quadrada",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "125 'ⁿ' n sobrescrito",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "126 '²' ao quadrado",
+          "alinhamento": "esquerda"
+        },
+        {
+          "texto": "127 '■' quadrado preto",
+          "alinhamento": "esquerda"
+        }
+      ]
+    }
+  },
+  {
+    "id": "tabela",
+    "grupo": "Símbolos",
+    "nome": "Tabela de símbolos",
+    "descricao": "Tabela compacta com os 127 símbolos em caixas (bordas com caracteres de traço).",
+    "cupom": {
+      "titulo": "TABELA SIMBOLOS (127)",
+      "linhas": [
+        {
+          "texto": "┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐"
+        },
+        {
+          "texto": "│  │1 │2 │3 │4 │5 │6 │7 │8 │9 │10│11│12│13│14│"
+        },
+        {
+          "texto": "├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤"
+        },
+        {
+          "texto": "│A │Ç │ü │é │â │ã │à │Á │ç │ê │Ê │è │Í │Ô │ì │"
+        },
+        {
+          "texto": "│B │Ã │Â │É │À │È │ô │õ │ò │Ú │ù │Ì │Õ │Ü │¢ │"
+        },
+        {
+          "texto": "│C │£ │Ù │₧ │Ó │á │í │ó │ú │ñ │Ñ │ª │º │¿ │Ò │"
+        },
+        {
+          "texto": "│D │¬ │½ │¼ │¡ │« │» │░ │▒ │▓ ││ │┤ │╡ │╢ │╖ │"
+        },
+        {
+          "texto": "│E │╕ │╣ │║ │╗ │╝ │╜ │╛ │┐ │└ │┴ │┬ │├ │─ │┼ │"
+        },
+        {
+          "texto": "│F │╞ │╟ │╚ │╔ │╩ │╦ │╠ │═ │╬ │╧ │╨ │╤ │╥ │╙ │"
+        },
+        {
+          "texto": "│G │╘ │╒ │╓ │╫ │╪ │┘ │┌ │█ │▄ │▌ │▐ │▀ │α │ß │"
+        },
+        {
+          "texto": "│H │Γ │π │Σ │σ │µ │τ │Φ │Θ │Ω │δ │∞ │φ │ε │∩ │"
+        },
+        {
+          "texto": "│I │≡ │± │≥ │≤ │⌠ │⌡ │÷ │≈ │° │∙ │• │√ │ⁿ │² │"
+        },
+        {
+          "texto": "│J │■ │  │  │  │  │  │  │  │  │  │  │  │  │  │"
+        },
+        {
+          "texto": "└──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┘"
+        }
+      ]
+    }
+  }
+]

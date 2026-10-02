@@ -1,0 +1,1184 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Elgin i9 Print API",
+    "version": "1.0.0",
+    "description": "API HTTP para imprimir cupons, imagens e QR codes numa impressora térmica **Elgin i9** de 80 mm (ESC/POS via USB).\n\n**Hardware:** papel de 80 mm = **576 dots** de largura (203 dpi) = **48 colunas** na fonte normal (1 coluna = 12 dots); cada linha de texto tem 24 dots de altura. A impressora é monocromática: imagens viram pontos pretos (dither).\n\n**Atenção:** os endpoints da tag *Impressão* imprimem de verdade, e não há autenticação. Use os da tag *Prévia* para testar sem gastar papel.\n\nErros seguem sempre o formato `{\"ok\": false, \"detail\": \"mensagem\"}` com status `400` (corpo inválido), `405` (método errado) ou `503` (impressora indisponível).\n\nGuia em linguagem natural para agentes de IA: [/llms.txt](/llms.txt) · Interface web: [/](/)"
+  },
+  "servers": [
+    {
+      "url": "{{BASE_URL}}"
+    }
+  ],
+  "externalDocs": {
+    "description": "Guia para agentes de IA",
+    "url": "{{BASE_URL}}/llms.txt"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Estado da impressora",
+        "operationId": "health",
+        "x-imprime": false,
+        "responses": {
+          "200": {
+            "description": "Estado atual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "examples": {
+                  "pronta": {
+                    "summary": "Impressora disponível",
+                    "value": {
+                      "ok": true,
+                      "device": "/dev/usb/lp0",
+                      "status": "pronta"
+                    }
+                  },
+                  "indisponivel": {
+                    "summary": "Desligada ou desconectada",
+                    "value": {
+                      "ok": false,
+                      "device": "/dev/usb/lp0",
+                      "status": "indisponivel"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Status"
+        ],
+        "description": "Verifica se o dispositivo USB da impressora está disponível agora. Chame antes de imprimir: se `ok` for `false`, os endpoints de impressão respondem `503`."
+      }
+    },
+    "/print": {
+      "post": {
+        "summary": "Imprime um cupom",
+        "operationId": "print",
+        "x-imprime": true,
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Imprime o `titulo` (fonte larga, centralizado) e os blocos de `linhas` em ordem, e corta o papel no final. Cada bloco é **texto**, **imagem** ou **QR code**, identificado por `tipo` (omitido = texto). Envie ao menos um título ou uma linha.\n\n- Textos maiores que a linha quebram em várias linhas (48 caracteres na fonte normal, 24 na larga, 6 na gigante).\n- Acentos e símbolos usam a code page PC860; caracteres fora dela viram `?` e emojis não são suportados (envie-os como imagem).\n- Para prever imagens e QR sem imprimir, use `POST /imagem/preview` e `GET /qr`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Cupom"
+              },
+              "examples": {
+                "simples": {
+                  "summary": "Cupom de texto",
+                  "value": {
+                    "titulo": "PEDIDO #123",
+                    "linhas": [
+                      {
+                        "texto": "=",
+                        "alinhamento": "esquerda",
+                        "linha": true
+                      },
+                      {
+                        "texto": "1x Hamburguer",
+                        "alinhamento": "esquerda"
+                      },
+                      {
+                        "texto": "TOTAL: R$ 45,00",
+                        "alinhamento": "direita",
+                        "fonte": "larga",
+                        "negrito": true
+                      }
+                    ]
+                  }
+                },
+                "qr_wifi": {
+                  "summary": "QR de Wi-Fi alinhado à esquerda",
+                  "value": {
+                    "linhas": [
+                      {
+                        "tipo": "qr",
+                        "qr": "WIFI:T:WPA;S:CafeExemplo;P:senha1234;H:false;;",
+                        "qr_tamanho": 5,
+                        "alinhamento": "esquerda"
+                      }
+                    ]
+                  }
+                },
+                "gigante": {
+                  "summary": "Senha em fonte gigante",
+                  "value": {
+                    "linhas": [
+                      {
+                        "texto": "A-042",
+                        "fonte": "gigante",
+                        "negrito": true
+                      }
+                    ],
+                    "compact": false
+                  }
+                },
+                "imagem": {
+                  "summary": "Imagem com ajustes",
+                  "value": {
+                    "linhas": [
+                      {
+                        "tipo": "imagem",
+                        "imagem": "<base64 de PNG/JPEG/GIF>",
+                        "largura": 288,
+                        "brilho": 10,
+                        "contraste": 15
+                      }
+                    ]
+                  }
+                },
+                "qr_pix": {
+                  "summary": "QR de PIX (payload EMV com CRC16)",
+                  "value": {
+                    "linhas": [
+                      {
+                        "tipo": "qr",
+                        "qr": "00020101021226370014br.gov.bcb.pix0115exemplo@pix.com520400005303986540510.005802BR5912LOJA EXEMPLO6009SAO PAULO62130509PEDIDO12363046C59",
+                        "qr_tamanho": 14
+                      }
+                    ]
+                  }
+                },
+                "qr_evento": {
+                  "summary": "QR de evento (iCal) com link de reunião",
+                  "value": {
+                    "linhas": [
+                      {
+                        "tipo": "qr",
+                        "qr": "BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Reunião\nDTSTART:20261015T140000\nDTEND:20261015T150000\nURL:https://meet.google.com/abc-defg-hij\nEND:VEVENT\nEND:VCALENDAR",
+                        "qr_tamanho": 8
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Impresso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintOk"
+                },
+                "examples": {
+                  "ok": {
+                    "value": {
+                      "ok": true,
+                      "linhas": 3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Impressão"
+        ]
+      }
+    },
+    "/feed": {
+      "post": {
+        "summary": "Avança o papel",
+        "operationId": "feed",
+        "x-imprime": true,
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "linhas": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 3,
+                    "description": "Quantas linhas avançar"
+                  }
+                }
+              },
+              "examples": {
+                "cinco": {
+                  "summary": "Avançar 5 linhas",
+                  "value": {
+                    "linhas": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Papel avançado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "linhas": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Impressão"
+        ],
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Avança o papel em N linhas de texto (24 dots cada), sem imprimir nada."
+      }
+    },
+    "/cut": {
+      "post": {
+        "summary": "Aciona a guilhotina",
+        "operationId": "cut",
+        "x-imprime": true,
+        "responses": {
+          "200": {
+            "description": "Cortado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Impressão"
+        ],
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Corta o papel na posição atual, sem imprimir nada."
+      }
+    },
+    "/ping": {
+      "get": {
+        "summary": "Teste ponta a ponta (imprime PONG!)",
+        "operationId": "ping",
+        "x-imprime": true,
+        "responses": {
+          "200": {
+            "description": "pong",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "pong"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Impressão"
+        ],
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Imprime **PONG!** em fonte gigante (96×96 dots por caractere) e responde o texto `pong`. Serve para confirmar que o servidor, o cabo USB e a impressora estão funcionando juntos."
+      }
+    },
+    "/qr": {
+      "get": {
+        "summary": "QR code como imagem PNG",
+        "operationId": "qrPng",
+        "x-imprime": false,
+        "description": "Gera o QR com o **mesmo gerador da impressão**, então o PNG mostra exatamente como o QR sai no papel (sem borda branca, com 24 dots de margem em branco embaixo). O conteúdo é só texto: o leitor do celular reconhece o prefixo (`WIFI:`, `tel:`, `mailto:`, `geo:`, vCard, iCal, PIX…). Veja os formatos em /llms.txt.",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conteúdo do QR"
+          },
+          {
+            "name": "tamanho",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 23,
+              "default": 14
+            },
+            "description": "Tamanho do módulo (3..23). Valores fora do intervalo não dão erro: são ajustados (menor que 3 vira 3, maior que 23 vira 23)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG do QR",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Prévia"
+        ]
+      }
+    },
+    "/qr/info": {
+      "get": {
+        "summary": "Tamanho do QR em módulos",
+        "operationId": "qrInfo",
+        "x-imprime": false,
+        "description": "Devolve o lado do QR em módulos (21 a 177). A largura impressa em dots é `modulos × qr_tamanho` (máximo 576): use para escolher o `qr_tamanho`. Para uma URL curta o QR tem 25 módulos.",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Informações",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "modulos": {
+                      "type": "integer",
+                      "example": 25
+                    },
+                    "papel_dots": {
+                      "type": "integer",
+                      "example": 576
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Prévia"
+        ]
+      }
+    },
+    "/imagem/preview": {
+      "post": {
+        "summary": "Prévia preto e branco de uma imagem",
+        "operationId": "imagemPreview",
+        "x-imprime": false,
+        "description": "Aplica à imagem o **mesmo processamento da impressão** (redimensionamento, nitidez, auto-contraste, brilho/contraste/meios-tons e dither Atkinson) e devolve o PNG em preto e branco puro. Aceita os mesmos campos do bloco de imagem. `escala_px` (opcional) reduz a saída: informe quantos pixels equivalem aos 576 dots do papel.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BlocoImagem"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "escala_px": {
+                        "type": "integer",
+                        "description": "Pixels equivalentes a 576 dots; reduz a saída por essa razão (opcional)"
+                      }
+                    }
+                  }
+                ]
+              },
+              "examples": {
+                "foto": {
+                  "summary": "Foto pequena com brilho",
+                  "value": {
+                    "tipo": "imagem",
+                    "imagem": "<base64 de PNG/JPEG/GIF>",
+                    "largura": 288,
+                    "brilho": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PNG preto e branco",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Prévia"
+        ]
+      }
+    },
+    "/test-grayscale": {
+      "get": {
+        "summary": "Imagem de teste com degradê",
+        "operationId": "testGrayscale",
+        "x-imprime": false,
+        "responses": {
+          "200": {
+            "description": "PNG",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Prévia"
+        ],
+        "description": "PNG com 16 tons de cinza, de branco a preto. É o que `POST /test-print` imprime."
+      }
+    },
+    "/test-print": {
+      "post": {
+        "summary": "Imprime o degradê de teste",
+        "operationId": "testPrint",
+        "x-imprime": true,
+        "responses": {
+          "200": {
+            "description": "Impresso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Impressão"
+        ],
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Imprime o degradê de 16 tons de cinza para você contar quantos tons a impressora distingue."
+      }
+    },
+    "/llms.txt": {
+      "get": {
+        "summary": "Guia em Markdown para agentes de IA",
+        "operationId": "llmsTxt",
+        "x-imprime": false,
+        "responses": {
+          "200": {
+            "description": "Markdown",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Documentação"
+        ],
+        "description": "Guia completo em linguagem natural (convenção llms.txt): hardware, endpoints, campos, formatos de QR, receitas de `curl` e regras de uso. Os exemplos já vêm com o endereço deste servidor."
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Especificação OpenAPI 3.1",
+        "operationId": "openapi",
+        "x-imprime": false,
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Documentação"
+        ],
+        "description": "Esta mesma especificação em JSON, para ferramentas e agentes que geram clientes ou chamam a API sozinhos."
+      }
+    },
+    "/docs/": {
+      "get": {
+        "tags": [
+          "Documentação"
+        ],
+        "summary": "Swagger UI (esta página)",
+        "operationId": "swaggerUi",
+        "x-imprime": false,
+        "description": "Interface interativa desta documentação. Os arquivos do Swagger UI são servidos pelo próprio servidor (funciona sem internet).",
+        "responses": {
+          "200": {
+            "description": "HTML",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exemplos": {
+      "get": {
+        "tags": [
+          "Exemplos"
+        ],
+        "summary": "Lista os exemplos",
+        "operationId": "exemplosLista",
+        "x-imprime": false,
+        "description": "Lista todos os cupons de exemplo, com grupo, nome, descrição e as URLs para consultar o cupom e para imprimi-lo.",
+        "responses": {
+          "200": {
+            "description": "Lista de exemplos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExemploResumo"
+                  }
+                },
+                "examples": {
+                  "lista": {
+                    "value": [
+                      {
+                        "id": "pedido",
+                        "grupo": "Cupons",
+                        "nome": "Pedido",
+                        "descricao": "Cupom de pedido com itens, linha separadora e total em fonte larga.",
+                        "cupom": "/exemplos/pedido",
+                        "imprimir": "/exemplos/pedido/print"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exemplos/{id}": {
+      "get": {
+        "tags": [
+          "Exemplos"
+        ],
+        "summary": "Cupom de um exemplo",
+        "operationId": "exemploCupom",
+        "x-imprime": false,
+        "description": "Devolve o cupom do exemplo **pronto para usar como corpo de `POST /print`** (imagens já em base64). Não imprime. Os campos `qr_modo` e `qr_campos` dos blocos de QR são dicas da interface web e são ignorados pela impressão.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "teste",
+                "pedido",
+                "etiqueta",
+                "moldura",
+                "qr-google",
+                "qr-wifi",
+                "qr-whatsapp",
+                "qr-contato",
+                "qr-email",
+                "qr-telefone",
+                "qr-sms",
+                "qr-geo",
+                "qr-evento",
+                "qr-pix",
+                "regua-qr",
+                "degrade",
+                "test-grayscale",
+                "simbolos",
+                "tabela"
+              ]
+            },
+            "description": "Identificador do exemplo (veja GET /exemplos)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cupom do exemplo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cupom"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/exemplos/{id}/print": {
+      "post": {
+        "tags": [
+          "Exemplos"
+        ],
+        "summary": "Imprime um exemplo",
+        "operationId": "exemploImprime",
+        "x-imprime": true,
+        "description": "⚠️ **IMPRIME DE VERDADE** (gasta papel e aciona a guilhotina). No Swagger UI, o botão *Execute* envia a requisição à impressora real. Imprime o exemplo escolhido (equivale a `GET /exemplos/{id}` seguido de `POST /print`).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "teste",
+                "pedido",
+                "etiqueta",
+                "moldura",
+                "qr-google",
+                "qr-wifi",
+                "qr-whatsapp",
+                "qr-contato",
+                "qr-email",
+                "qr-telefone",
+                "qr-sms",
+                "qr-geo",
+                "qr-evento",
+                "qr-pix",
+                "regua-qr",
+                "degrade",
+                "test-grayscale",
+                "simbolos",
+                "tabela"
+              ]
+            },
+            "description": "Identificador do exemplo (veja GET /exemplos)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Impresso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrintOk"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": false
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "detail"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "device": {
+            "type": "string",
+            "example": "/dev/usb/lp0"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pronta",
+              "indisponivel"
+            ]
+          }
+        }
+      },
+      "PrintOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "linhas": {
+            "type": "integer"
+          }
+        }
+      },
+      "Cupom": {
+        "type": "object",
+        "description": "Envie titulo e/ou linhas.",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "description": "Topo do cupom, centralizado, fonte larga (quebra a cada 24 caracteres)"
+          },
+          "linhas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Bloco"
+            }
+          },
+          "compact": {
+            "type": "boolean",
+            "default": true,
+            "description": "true: corta rente à última linha; false: 3 linhas de respiro antes do corte"
+          }
+        }
+      },
+      "Bloco": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BlocoTexto"
+          },
+          {
+            "$ref": "#/components/schemas/BlocoImagem"
+          },
+          {
+            "$ref": "#/components/schemas/BlocoQr"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "tipo"
+        }
+      },
+      "Alinhamento": {
+        "type": "string",
+        "enum": [
+          "esquerda",
+          "centro",
+          "direita"
+        ],
+        "default": "centro"
+      },
+      "BlocoTexto": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto"
+            ],
+            "description": "Pode ser omitido"
+          },
+          "texto": {
+            "type": "string",
+            "description": "Texto em UTF-8; convertido para a code page PC860 (caracteres fora dela viram '?'; emojis não são suportados). Passando da largura da linha, quebra em várias linhas."
+          },
+          "alinhamento": {
+            "$ref": "#/components/schemas/Alinhamento"
+          },
+          "fonte": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "larga",
+              "gigante"
+            ],
+            "default": "normal",
+            "description": "normal: 48 colunas; larga: 24 colunas (largura 2x); gigante: 6 colunas (largura 8x, altura 4x)"
+          },
+          "negrito": {
+            "type": "boolean",
+            "default": false
+          },
+          "linha": {
+            "type": "boolean",
+            "default": false,
+            "description": "Repete o texto até preencher a linha (ex.: '-X' vira -X-X-X…)"
+          }
+        },
+        "required": [
+          "texto"
+        ],
+        "description": "Imprime uma linha de texto (quebra automática em várias linhas se passar da largura)."
+      },
+      "BlocoImagem": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "imagem"
+            ]
+          },
+          "imagem": {
+            "type": "string",
+            "description": "Base64 de PNG, JPEG ou GIF, com ou sem o prefixo data:image/...;base64,"
+          },
+          "alinhamento": {
+            "$ref": "#/components/schemas/Alinhamento"
+          },
+          "largura": {
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 576,
+            "description": "Largura impressa em dots. Omitido/0 = tamanho original (até 576). 576 = papel inteiro."
+          },
+          "brilho": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100,
+            "default": 0
+          },
+          "contraste": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100,
+            "default": 0
+          },
+          "meios_tons": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100,
+            "default": 0,
+            "description": "Positivo clareia só os tons médios"
+          },
+          "nitidez": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 30
+          },
+          "auto_contraste": {
+            "type": "boolean",
+            "default": true
+          },
+          "inverter": {
+            "type": "boolean",
+            "default": false,
+            "description": "Negativo"
+          }
+        },
+        "required": [
+          "tipo",
+          "imagem"
+        ],
+        "description": "Imprime uma imagem convertida para preto e branco. Transparência vira branco. Atenção: imagens com grandes áreas pretas esquentam o cabeçote e podem fazer a impressora pausar."
+      },
+      "BlocoQr": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "qr"
+            ]
+          },
+          "qr": {
+            "type": "string",
+            "description": "Conteúdo do QR. Formatos: URL/texto; WIFI:T:WPA;S:rede;P:senha;H:false;; ; https://wa.me/5511999999999?text=... ; tel:+55... ; SMSTO:+55...:msg ; mailto:a@b.com?subject=...; geo:lat,lng ; vCard (BEGIN:VCARD...) ; iCal (BEGIN:VCALENDAR...) ; PIX (payload EMV com CRC16). Veja /llms.txt."
+          },
+          "qr_tamanho": {
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 23,
+            "default": 14,
+            "description": "Tamanho do módulo em dots (3..23). Valores fora do intervalo não dão erro: menor que 3 vira 3 e maior que 23 vira 23. Largura impressa = modulos × qr_tamanho (máx. 576; reduz sozinho se não couber)."
+          },
+          "alinhamento": {
+            "$ref": "#/components/schemas/Alinhamento"
+          }
+        },
+        "required": [
+          "tipo",
+          "qr"
+        ],
+        "description": "Imprime um QR code. Largura impressa = módulos × qr_tamanho (máx. 576 dots)."
+      },
+      "ExemploResumo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "grupo": {
+            "type": "string",
+            "enum": [
+              "Cupons",
+              "QR Code",
+              "Imagem",
+              "Símbolos"
+            ]
+          },
+          "nome": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "cupom": {
+            "type": "string",
+            "description": "URL para consultar o cupom (GET)"
+          },
+          "imprimir": {
+            "type": "string",
+            "description": "URL para imprimir (POST)"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Status",
+      "description": "Estado da impressora. Não imprimem."
+    },
+    {
+      "name": "Impressão",
+      "description": "⚠️ Estes endpoints **imprimem de verdade**: gastam papel e acionam a guilhotina. Ao testar no Swagger UI, o botão *Execute* envia a requisição à impressora real."
+    },
+    {
+      "name": "Prévia",
+      "description": "Mostram como QR e imagens sairão impressos, **sem imprimir**. Use para testar tamanhos e ajustes antes de gastar papel."
+    },
+    {
+      "name": "Documentação",
+      "description": "Esta documentação em formatos para pessoas (Swagger UI) e para máquinas e IAs (OpenAPI, llms.txt)."
+    },
+    {
+      "name": "Exemplos",
+      "description": "Cupons de exemplo prontos (os mesmos do menu *Exemplos* da interface web): cupons, QR codes de todos os tipos, imagens e tabelas de símbolos. Cada exemplo pode ser consultado (não imprime) ou impresso."
+    }
+  ]
+}

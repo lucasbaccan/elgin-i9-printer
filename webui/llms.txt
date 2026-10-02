@@ -1,0 +1,230 @@
+# Elgin i9 Print API
+
+> API HTTP (JSON) para imprimir cupons, etiquetas, imagens e QR codes numa impressora térmica Elgin i9 de 80 mm (ESC/POS via USB). Este servidor: {{BASE_URL}}. Especificação formal: {{BASE_URL}}/openapi.json. Interface web para humanos: {{BASE_URL}}/ (abra no navegador).
+
+Cada chamada a `POST /print` imprime **de verdade** (gasta papel e aciona a guilhotina). Não há autenticação. Veja "Regras para agentes" antes de imprimir.
+
+## Fatos do hardware (para calcular tamanhos)
+
+- Papel de 80 mm = **576 dots** de largura (203 dpi) = **48 colunas** na fonte normal (cada coluna = 12 dots).
+- Fonte normal: 48 colunas por linha. Fonte `larga` (largura 2x): 24 colunas. Fonte `gigante` (largura 8x, altura 4x): 6 colunas.
+- Cada linha de texto tem 24 dots de altura (3 mm).
+- A impressora é monocromática (preto e branco puro, sem cinza): imagens viram pontos pretos (dither).
+
+## Começo rápido
+
+1. Confira se a impressora está disponível: `curl {{BASE_URL}}/health` → `{"ok":true,"device":"/dev/usb/lp0","status":"pronta"}`. Se `ok` for `false`, não imprima.
+2. Imprima um cupom:
+
+```bash
+curl -X POST {{BASE_URL}}/print \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "titulo": "PEDIDO #123",
+    "linhas": [
+      {"texto": "=", "alinhamento": "esquerda", "linha": true},
+      {"texto": "1x Hamburguer", "alinhamento": "esquerda"},
+      {"texto": "2x Refrigerante", "alinhamento": "esquerda"},
+      {"texto": "TOTAL: R$ 45,00", "alinhamento": "direita", "fonte": "larga", "negrito": true},
+      {"texto": "=", "alinhamento": "esquerda", "linha": true}
+    ]
+  }'
+```
+
+Resposta de sucesso: `{"ok": true, "linhas": 5}`. O cupom é cortado automaticamente no final.
+
+## Endpoints
+
+| Método e caminho | O que faz | Imprime? |
+|---|---|---|
+| `GET /health` | Estado da impressora: `{"ok", "device", "status": "pronta"\|"indisponivel"}` | não |
+| `POST /print` | Imprime um cupom (corpo JSON, veja abaixo) | **sim** |
+| `POST /feed` | Avança o papel. Corpo opcional `{"linhas": N}` (padrão 3) | sim (só papel) |
+| `POST /cut` | Aciona a guilhotina | sim (corte) |
+| `GET /ping` | Teste ponta a ponta: imprime "PONG!" grande e responde o texto `pong` | **sim** |
+| `GET /qr?text=...&tamanho=4` (tamanho 3..23, ajustado sem erro) | Devolve o QR como PNG, exatamente como seria impresso | não |
+| `GET /qr/info?text=...` | `{"modulos": N, "papel_dots": 576}`: lado do QR em módulos | não |
+| `POST /imagem/preview` | Devolve um PNG preto e branco: como uma imagem sairá impressa (mesmos campos do bloco imagem) | não |
+| `GET /test-grayscale` | PNG de teste com degradê de 16 tons | não |
+| `POST /test-print` | Imprime o degradê de teste | sim |
+| `GET /exemplos` | Lista os cupons de exemplo prontos (id, grupo, nome, descrição) | não |
+| `GET /exemplos/{id}` | O cupom do exemplo, **pronto para enviar a `POST /print`** (imagens já em base64) | não |
+| `POST /exemplos/{id}/print` | Imprime o exemplo (atalho de `GET /exemplos/{id}` + `POST /print`) | **sim** |
+| `GET /` | Interface web (navegador). Com `Accept` que não seja HTML devolve um JSON de documentação | não |
+| `GET /llms.txt`, `GET /openapi.json` | Esta documentação e a especificação OpenAPI | não |
+| `GET /docs/` | Swagger UI: documentação interativa para humanos (o botão *Execute* imprime de verdade nos endpoints de impressão) | não |
+
+Erros: JSON `{"ok": false, "detail": "mensagem"}` com status `400` (corpo inválido, imagem inválida, QR vazio), `405` (método errado: use POST), `503` (impressora não encontrada ou falha ao enviar).
+
+## POST /print
+
+Corpo (JSON):
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `titulo` | string, opcional | Impresso no topo, centralizado, em fonte larga. Quebra a cada 24 caracteres. |
+| `linhas` | array de blocos | Blocos impressos em ordem. É preciso enviar `titulo` ou ao menos uma linha. |
+| `compact` | bool, opcional (padrão `true`) | `true`: corta rente à última linha. `false`: avança 3 linhas antes do corte. |
+
+Cada item de `linhas` é um **bloco**; o campo `tipo` define qual: `"texto"` (padrão, pode ser omitido), `"imagem"` ou `"qr"`.
+
+### Bloco de texto (`tipo` omitido ou `"texto"`)
+
+| Campo | Valores | Padrão |
+|---|---|---|
+| `texto` | string | |
+| `alinhamento` | `esquerda`, `centro`, `direita` | `centro` |
+| `fonte` | `normal` (48 col), `larga` (24 col), `gigante` (6 col, caracteres de 96×96 dots) | `normal` |
+| `negrito` | bool | `false` |
+| `linha` | bool: repete `texto` até preencher a linha inteira (ex.: `"-X"` vira `-X-X-X…`) | `false` |
+
+Regras:
+- Texto maior que a largura da linha é **quebrado** em várias linhas (a cada 48/24/6 caracteres, sem respeitar palavras). Nada é cortado.
+- Linha vazia (`"texto": ""`) imprime uma linha em branco: use para espaçar.
+- Para um separador: `{"texto": "=", "linha": true, "alinhamento": "esquerda"}` (ou `"-"`, `"*"`, `"-X"`).
+- Não existe bloco "lista" na API. Simule com texto: `{"texto": "• Item", "alinhamento": "esquerda"}` ou `"[x] Item"` / `"[ ] Item"`.
+- **Acentos e símbolos**: o servidor usa a code page PC860 (português). Funcionam `ç ã õ á é í ó ú â ê ô à ü ñ`, `° ± ½ ¼ ² √ ≈ ≤ ≥ ∞ Ω π µ •` e outros. Caracteres fora dela viram `?`. **Emojis não são suportados como texto**: para imprimir um emoji, envie-o como imagem.
+
+### Bloco de imagem (`tipo: "imagem"`)
+
+| Campo | Valores | Padrão |
+|---|---|---|
+| `imagem` | **obrigatório**: base64 de PNG, JPEG ou GIF, com ou sem o prefixo `data:image/...;base64,` | |
+| `alinhamento` | `esquerda`, `centro`, `direita` | `centro` |
+| `largura` | largura impressa em dots, `8..576`. `0`/omitido = tamanho original (limitado a 576). 576 = papel inteiro, 288 = metade | original |
+| `brilho` | `-100..100` (+ clareia) | `0` |
+| `contraste` | `-100..100` | `0` |
+| `meios_tons` | `-100..100` (+ clareia só os tons médios) | `0` |
+| `nitidez` | `0..100` | `30` |
+| `auto_contraste` | bool: estica o histograma (mais escuro vira preto, mais claro vira branco) | `true` |
+| `inverter` | bool: negativo | `false` |
+
+Como funciona: transparência vira branco; a imagem é redimensionada (Lanczos), vira cinza, recebe nitidez, auto-contraste e os ajustes, e é convertida para pontos pretos com dither Atkinson. A imagem **nunca é ampliada além do que se pede em `largura`**; sem `largura`, imagens menores que o papel saem no tamanho original.
+
+Dicas:
+- Para prever o resultado sem gastar papel: `POST /imagem/preview` com os mesmos campos (`imagem`, `brilho`, …) devolve o PNG preto e branco. Opcional `escala_px` reduz a saída.
+- Imagem escura demais sai como um bloco preto: aumente `brilho`/`meios_tons` ou ative/mantenha `auto_contraste`. Imagem lavada: aumente `contraste`.
+- **Atenção a imagens muito pretas**: grandes áreas pretas esquentam o cabeçote da impressora, que pode pausar no meio e deixar uma linha na imagem. Prefira logos e imagens claras ou com bastante branco, e evite fundos pretos grandes.
+- Tamanho máximo: 50 milhões de pixels. Envie imagens já reduzidas (por exemplo, até ~1000 px de largura) para a requisição ser rápida.
+
+### Bloco de QR code (`tipo: "qr"`)
+
+| Campo | Valores | Padrão |
+|---|---|---|
+| `qr` | **obrigatório**: o conteúdo do QR (veja os formatos abaixo) | |
+| `qr_tamanho` | tamanho do módulo, `3..23`. Maior = QR maior no papel. Fora do intervalo **não dá erro**: menor que 3 vira 3 e maior que 23 vira 23 | `14` |
+| `alinhamento` | `esquerda`, `centro`, `direita` | `centro` |
+
+- O padrão é módulo 14: para uma URL curta (25 módulos) ocupa 350 dots, cerca de 60% do papel. O QR é gerado sem borda branca e com 24 dots (3 mm) de espaço em branco abaixo. Se não couber nos 576 dots, o módulo é reduzido automaticamente.
+- Largura impressa em dots = `modulos × qr_tamanho`, onde `modulos` é o lado do QR (21 a 177; ex.: 25 para uma URL curta). Consulte `GET /qr/info?text=...` para saber `modulos` e escolher `qr_tamanho`.
+- Para uma URL curta (~25 módulos): módulo 3 ≈ 75 dots (6 colunas), 4 ≈ 100 (8), 5 ≈ 125 (10), 8 ≈ 200 (17), 12 ≈ 300 (25), 22 ≈ 550 (46).
+- Módulos abaixo de 3 ficam pequenos demais para leitores de celular, por isso o mínimo é 3 (3 só com poucos dados). Para conteúdos longos (vCard, evento) use 4 ou mais. O máximo, 23, ocupa o papel inteiro para um QR de 25 módulos.
+- Prévia sem imprimir: `GET /qr?text=...&tamanho=4` (tamanho 3..23, ajustado sem erro).
+
+#### Formatos de conteúdo (campo `qr`)
+
+O conteúdo do QR é só texto. O leitor do celular reconhece o prefixo e oferece a ação correta. Monte assim:
+
+| Tipo | Conteúdo de `qr` |
+|---|---|
+| Site / texto livre | `https://www.google.com` ou qualquer texto |
+| Wi-Fi | `WIFI:T:WPA;S:NomeDaRede;P:senha;H:false;;` — `T` = `WPA`, `WEP` ou `nopass` (sem `P:`); escape com `\` em `\ ; , : "` |
+| WhatsApp | `https://wa.me/5511999999999?text=Ol%C3%A1` — telefone só com dígitos, com DDI+DDD; texto em URL-encode |
+| Telefone | `tel:+5511999999999` |
+| SMS | `SMSTO:+5511999999999:mensagem` |
+| E-mail | `mailto:a@b.com?subject=Assunto&body=Texto` (valores em URL-encode) |
+| Localização | `geo:-23.5505,-46.6333` |
+| Contato (vCard) | `BEGIN:VCARD\nVERSION:3.0\nFN:Maria Silva\nN:Maria Silva;;;;\nORG:Empresa\nTITLE:Cargo\nTEL:+5511999999999\nEMAIL:maria@exemplo.com\nURL:https://exemplo.com\nEND:VCARD` — linhas separadas por `\n` reais (quebra de linha) |
+| Evento (iCal) | `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:Reunião\nDTSTART:20261015T140000\nDTEND:20261015T150000\nLOCATION:Sala 3\nDESCRIPTION:Detalhes\nURL:https://meet.google.com/abc-defg-hij\nEND:VEVENT\nEND:VCALENDAR` — `DTEND` deve ser igual ou depois de `DTSTART`; vírgula, ponto e vírgula e quebra de linha na descrição levam `\` na frente (`\,` `\;` `\n`) |
+| PIX (BR Code) | Payload EMV (veja "Como montar o PIX" abaixo). Exemplo: `00020101021226370014br.gov.bcb.pix0115exemplo@pix.com520400005303986540510.005802BR5912LOJA EXEMPLO6009SAO PAULO62130509PEDIDO12363046C59` |
+
+#### Como montar o PIX (BR Code estático)
+
+O payload é uma sequência de campos `ID` (2 dígitos) + `TAMANHO` (2 dígitos, em caracteres) + `VALOR`, concatenados, sem separadores:
+
+| ID | Conteúdo |
+|---|---|
+| `00` | `01` (versão) |
+| `01` | `11` (reutilizável, sem valor fixo) ou `12` (uso único) |
+| `26` | campo aninhado: `00` = `br.gov.bcb.pix`, `01` = **chave PIX** (CPF, CNPJ, e-mail, telefone `+55…` ou chave aleatória) |
+| `52` | `0000` |
+| `53` | `986` (BRL) |
+| `54` | valor com ponto e duas casas (ex.: `10.00`); omita o campo se o valor for livre |
+| `58` | `BR` |
+| `59` | nome do recebedor: até 25 caracteres, MAIÚSCULAS, sem acento nem símbolo |
+| `60` | cidade: até 15 caracteres, MAIÚSCULAS, sem acento |
+| `62` | campo aninhado: `05` = identificador da transação (até 25 letras/números; `***` se não houver) |
+| `63` | `04` + CRC16: sempre o último campo |
+
+CRC16-CCITT (polinômio `0x1021`, valor inicial `0xFFFF`) calculado sobre **todo o texto anterior, incluindo o `6304`**, em 4 caracteres hexadecimais maiúsculos. Exemplo do payload acima: o texto até `...PEDIDO123` + `6304` gera o CRC `6C59`. Calcule o CRC com código; não o invente.
+
+Exemplo (Wi-Fi, alinhado à esquerda, módulo 5):
+
+```json
+{"tipo": "qr", "qr": "WIFI:T:WPA;S:CafeExemplo;P:senha1234;H:false;;", "qr_tamanho": 5, "alinhamento": "esquerda"}
+```
+
+## Exemplos prontos
+
+`GET /exemplos` lista cupons de exemplo que você pode consultar e imprimir sem montar o JSON: cupons (`teste`, `pedido`, `etiqueta`, `moldura`), QR codes de todos os tipos (`qr-google`, `qr-wifi`, `qr-whatsapp`, `qr-contato`, `qr-email`, `qr-telefone`, `qr-sms`, `qr-geo`, `qr-evento`, `qr-pix`, `regua-qr`), imagens (`degrade`, `test-grayscale`) e tabelas de símbolos (`simbolos`, `tabela`). Para ver o cupom de um exemplo (útil como modelo para montar o seu): `GET /exemplos/qr-wifi`. Os campos `qr_modo` e `qr_campos` que aparecem nos blocos de QR são dicas da interface web e podem ser ignorados.
+
+```bash
+curl {{BASE_URL}}/exemplos                          # lista
+curl {{BASE_URL}}/exemplos/qr-wifi                  # o cupom (não imprime)
+curl -X POST {{BASE_URL}}/exemplos/qr-wifi/print    # imprime
+```
+
+## Receitas
+
+Cupom com QR e imagem pequena:
+
+```bash
+curl -X POST {{BASE_URL}}/print -H 'Content-Type: application/json' -d '{
+  "titulo": "PROMO",
+  "linhas": [
+    {"tipo": "imagem", "imagem": "<BASE64_DO_LOGO>", "largura": 288, "brilho": 10},
+    {"texto": "Aponte a câmera e ganhe 10% OFF", "alinhamento": "centro"},
+    {"tipo": "qr", "qr": "https://exemplo.com/promo", "qr_tamanho": 6}
+  ]
+}'
+```
+
+Senha / destaque em fonte gigante (máx. 6 caracteres por linha):
+
+```bash
+curl -X POST {{BASE_URL}}/print -H 'Content-Type: application/json' -d '{
+  "linhas": [
+    {"texto": "A-042", "fonte": "gigante", "negrito": true, "alinhamento": "centro"},
+    {"texto": "Aguarde ser chamado", "alinhamento": "centro"}
+  ],
+  "compact": false
+}'
+```
+
+Avançar papel e cortar manualmente:
+
+```bash
+curl -X POST {{BASE_URL}}/feed -H 'Content-Type: application/json' -d '{"linhas": 5}'
+curl -X POST {{BASE_URL}}/cut
+```
+
+Gerar a imagem de um QR sem imprimir:
+
+```bash
+curl -G {{BASE_URL}}/qr --data-urlencode 'text=https://www.google.com' -d tamanho=6 -o qr.png
+```
+
+## Regras para agentes
+
+- **Imprimir tem efeito físico** (papel e corte). Só chame `POST /print`, `/feed`, `/cut`, `/test-print` e `GET /ping` quando o usuário pedir. Não imprima "para testar" nem em loop. Para testar o formato, use `GET /qr`, `GET /qr/info` e `POST /imagem/preview`, que não imprimem.
+- Antes de imprimir, chame `GET /health` e pare se `ok` for `false` (status `503`: a impressora está desligada, sem papel ou desconectada).
+- Imprima **uma vez**: se a resposta for `200`, não repita. Em erro `503`, não repita automaticamente várias vezes.
+- Respeite os limites: 48 caracteres por linha normal, 24 larga, 6 gigante. Textos longos quebram em várias linhas.
+- Não há negrito parcial nem cores: a impressora é preto e branco, uma única fonte (com negrito, larga e gigante).
+- Dados sensíveis (senhas de Wi-Fi, chaves PIX, telefones) ficam impressos no papel. Confirme com o usuário se for algo que não deveria sair.
+- O corpo deve ser JSON UTF-8 válido com `Content-Type: application/json`.
+
+## Mais informações
+
+- Especificação OpenAPI 3.1: {{BASE_URL}}/openapi.json (Swagger UI interativo: {{BASE_URL}}/docs/)
+- Interface web (monta cupons visualmente, mostra o payload JSON e o `curl` equivalentes, tem o menu *Exemplos* e o botão *Compartilhar*, que gera um link que reconstrói o cupom; abrir esse link só carrega o editor, não imprime): {{BASE_URL}}/

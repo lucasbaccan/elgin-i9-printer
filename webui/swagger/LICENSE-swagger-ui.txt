@@ -1,0 +1,4 @@
+Swagger UI (swagger-ui-bundle.js e swagger-ui.css, versão 5.17.14, distribuição swagger-ui-dist)
+Copyright SmartBear Software — licenciado sob Apache License 2.0
+https://github.com/swagger-api/swagger-ui · https://www.apache.org/licenses/LICENSE-2.0
+Os arquivos estão embutidos no binário para a documentação funcionar sem internet.
