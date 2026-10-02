@@ -136,8 +136,8 @@ func TestPingEndpoint(t *testing.T) {
 	if rec.Body.String() != "pong" {
 		t.Fatalf("ping deveria responder 'pong', veio %q", rec.Body.String())
 	}
-	if !bytes.Contains(captured, []byte("pong")) {
-		t.Fatalf("ping deveria imprimir 'pong', bytes enviados: %q", captured)
+	if !bytes.Contains(captured, []byte("PONG!")) {
+		t.Fatalf("ping deveria imprimir 'PONG!', bytes enviados: %q", captured)
 	}
 }
 
@@ -251,5 +251,136 @@ func TestRootPathDesconhecido404(t *testing.T) {
 	handleRoot(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("path desconhecido deveria retornar 404, veio %d", rec.Code)
+	}
+}
+
+func TestLlmsTxtEOpenAPI(t *testing.T) {
+	for _, c := range []struct {
+		path, tipo string
+		h          http.HandlerFunc
+	}{{"/llms.txt", "text/markdown", handleLlmsTxt}, {"/openapi.json", "application/json", handleOpenAPI}} {
+		req := httptest.NewRequest(http.MethodGet, c.path, nil)
+		req.Host = "impressora.local:8000"
+		rec := httptest.NewRecorder()
+		c.h(rec, req)
+		if rec.Code != http.StatusOK || !strings.HasPrefix(rec.Header().Get("Content-Type"), c.tipo) {
+			t.Fatalf("%s: status %d, content-type %q", c.path, rec.Code, rec.Header().Get("Content-Type"))
+		}
+		corpo := rec.Body.String()
+		if strings.Contains(corpo, "{{BASE_URL}}") || !strings.Contains(corpo, "http://impressora.local:8000") {
+			t.Fatalf("%s: o marcador {{BASE_URL}} deveria virar a URL de acesso", c.path)
+		}
+		if c.path == "/llms.txt" { // todo exemplo precisa estar citado no guia (evita doc desatualizada)
+			lista, _ := carregarExemplos()
+			for _, e := range lista {
+				if !strings.Contains(corpo, "`"+e.ID+"`") {
+					t.Errorf("exemplo %q não está citado em llms.txt", e.ID)
+				}
+			}
+		}
+		if c.path == "/openapi.json" {
+			var doc struct {
+				Paths map[string]any `json:"paths"`
+			}
+			if err := json.Unmarshal([]byte(corpo), &doc); err != nil {
+				t.Fatalf("openapi.json inválido: %v", err)
+			}
+			// todo endpoint registrado no servidor deve estar documentado
+			for _, p := range []string{"/health", "/print", "/feed", "/cut", "/ping", "/qr", "/qr/info",
+				"/imagem/preview", "/test-grayscale", "/test-print", "/llms.txt", "/openapi.json", "/docs/", "/exemplos", "/exemplos/{id}", "/exemplos/{id}/print"} {
+				if _, ok := doc.Paths[p]; !ok {
+					t.Errorf("endpoint %s não está no openapi.json", p)
+				}
+			}
+		}
+	}
+	// Host com caracteres estranhos não pode vazar para a documentação
+	req := httptest.NewRequest(http.MethodGet, "/llms.txt", nil)
+	req.Host = `x"><script>`
+	rec := httptest.NewRecorder()
+	handleLlmsTxt(rec, req)
+	if strings.Contains(rec.Body.String(), "<script>") {
+		t.Fatal("Host inválido não deveria ser refletido na documentação")
+	}
+}
+
+func TestSwaggerUIServidoDoBinario(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/docs/", http.StripPrefix("/docs/", cacheLongo(http.FileServerFS(subSwagger()))))
+	for _, c := range []struct{ path, contem string }{
+		{"/docs/", "swagger-ui-bundle.js"},
+		{"/docs/swagger-ui.css", ".swagger-ui"},
+		{"/docs/swagger-ui-bundle.js", "SwaggerUIBundle"},
+	} {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, c.path, nil))
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), c.contem) {
+			t.Fatalf("%s: status %d, esperava conter %q", c.path, rec.Code, c.contem)
+		}
+	}
+}
+
+func TestExemplosEndpoints(t *testing.T) {
+	// lista
+	rec := httptest.NewRecorder()
+	handleExemplos(rec, httptest.NewRequest(http.MethodGet, "/exemplos", nil))
+	if rec.Code != 200 {
+		t.Fatalf("GET /exemplos: %d %s", rec.Code, rec.Body.String())
+	}
+	var lista []map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &lista); err != nil || len(lista) < 19 {
+		t.Fatalf("lista inválida (%d itens): %v", len(lista), err)
+	}
+	// todo exemplo: o cupom resolve (imagens inclusive) e vira bytes ESC/POS sem erro
+	for _, it := range lista {
+		rec := httptest.NewRecorder()
+		handleExemplos(rec, httptest.NewRequest(http.MethodGet, it["cupom"], nil))
+		if rec.Code != 200 {
+			t.Fatalf("GET %s: %d %s", it["cupom"], rec.Code, rec.Body.String())
+		}
+		var c Cupom
+		if err := json.Unmarshal(rec.Body.Bytes(), &c); err != nil {
+			t.Fatalf("%s: não é um Cupom: %v", it["id"], err)
+		}
+		if strings.Contains(rec.Body.String(), `"@`) {
+			t.Fatalf("%s: referência de imagem (@) não foi resolvida", it["id"])
+		}
+		titulo := ""
+		if c.Titulo != nil {
+			titulo = *c.Titulo
+		}
+		if _, err := montarCupom(titulo, c.Linhas); err != nil {
+			t.Fatalf("%s: montarCupom falhou: %v", it["id"], err)
+		}
+	}
+	// id inexistente -> 404 ; método errado -> 405
+	rec = httptest.NewRecorder()
+	handleExemplos(rec, httptest.NewRequest(http.MethodGet, "/exemplos/nao-existe", nil))
+	if rec.Code != 404 {
+		t.Fatalf("exemplo inexistente deveria dar 404, veio %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	handleExemplos(rec, httptest.NewRequest(http.MethodGet, "/exemplos/teste/print", nil))
+	if rec.Code != 405 {
+		t.Fatalf("GET em /print deveria dar 405, veio %d", rec.Code)
+	}
+	// não dá para ler arquivos arbitrários pelo @arquivo
+	if _, err := resolverImagem("@../server.go"); err == nil {
+		t.Fatal("referência com .. deveria ser recusada")
+	}
+}
+
+func TestExemplosImprimem(t *testing.T) {
+	var captured []byte
+	orig := enviar
+	enviar = func(dados []byte, cortar bool, feedCorte int) error { captured = dados; return nil }
+	defer func() { enviar = orig }()
+	if !devicePresent() {
+		t.Skip("sem impressora: executarPrint exige o device") // mesmo motivo dos demais testes de /print
+	}
+	rec := httptest.NewRecorder()
+	handleExemplos(rec, httptest.NewRequest(http.MethodPost, "/exemplos/pedido/print", nil))
+	if rec.Code != 200 || !bytes.Contains(captured, []byte("PEDIDO #123")) {
+		t.Fatalf("POST /exemplos/pedido/print: %d %s", rec.Code, rec.Body.String())
 	}
 }
