@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 )
@@ -11,6 +12,7 @@ import (
 const (
 	WidthNormal = 48 // colunas na Fonte A
 	WidthLarge  = 24 // colunas com largura 2x
+	WidthGiant  = 6  // colunas com largura 8x
 )
 
 // Comandos ESC/POS da i9 guardados como bytes crus. Ao contrário do bash,
@@ -21,6 +23,7 @@ var (
 	fontA       = []byte("\x1b\x4d\x00")     // ESC M 0      Fonte A 12x24 (48 colunas)
 	largeOn     = []byte("\x1d\x21\x10")     // GS ! 16      largura 2x
 	largeOff    = []byte("\x1d\x21\x00")     // GS ! 0       largura normal
+	giantOn     = []byte("\x1d\x21\x73")     // GS ! 0x73    largura 8x e altura 4x (caractere 96x96 dots, quadrado)
 	boldOn      = []byte("\x1b\x45\x01")     // ESC E 1      negrito ligado
 	boldOff     = []byte("\x1b\x45\x00")     // ESC E 0      negrito desligado
 	alignLeft   = []byte("\x1b\x61\x00")     // ESC a 0
@@ -78,7 +81,7 @@ func encodeTexto(s string) []byte {
 type Linha struct {
 	Texto       string `json:"texto"`
 	Alinhamento string `json:"alinhamento"` // esquerda | centro | direita
-	Fonte       string `json:"fonte"`       // normal | larga
+	Fonte       string `json:"fonte"`       // normal | larga | gigante (8x largura, 4x altura: só ~6 colunas)
 	Negrito     bool   `json:"negrito"`
 	Linha       bool   `json:"linha"` // true = repete o texto até preencher a linha (antigo "padrao")
 
@@ -86,10 +89,16 @@ type Linha struct {
 	Tipo      string `json:"tipo"`       // "" | "texto" | "imagem" | "qr"
 	Imagem    string `json:"imagem"`     // base64 (ou data URL) para tipo=imagem
 	Qr        string `json:"qr"`         // conteúdo do QR (texto/URL) para tipo=qr
-	QrTamanho int    `json:"qr_tamanho"` // tamanho do módulo do QR (1..8; padrão 4)
+	QrTamanho int    `json:"qr_tamanho"` // tamanho do módulo do QR (3..23; padrão 14; fora disso é ajustado)
 
-	// Processamento de imagem
-	Dither string `json:"dither"` // "bayer" (halftone, padrão - melhor para cinza) | "floyd" (difusão de erro - suave)
+	// Processamento de imagem (tipo=imagem). Tudo opcional; ausente = padrão.
+	Largura       int   `json:"largura"`        // largura impressa em dots, 8..576 (0 = original, até 576)
+	Brilho        int   `json:"brilho"`         // -100..100
+	Contraste     int   `json:"contraste"`      // -100..100
+	MeiosTons     int   `json:"meios_tons"`     // -100..100 (+ clareia os meios-tons)
+	Nitidez       *int  `json:"nitidez"`        // 0..100 (padrão 30)
+	AutoContraste *bool `json:"auto_contraste"` // padrão true
+	Inverter      bool  `json:"inverter"`       // negativo
 }
 
 // Cupom é o payload de POST /print (compatível com a API antiga).
@@ -224,11 +233,7 @@ func montarImagem(l Linha) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Usa método de dithering escolhido: "floyd" para suave, "bayer" (padrão) para melhor contraste
-	if l.Dither == "floyd" {
-		return imagemParaGSv0Floyd(img, l.Alinhamento)
-	}
-	return imagemParaGSv0(img, l.Alinhamento)
+	return imagemParaGSv0Ajustes(img, l.Alinhamento, ajustesDe(l))
 }
 
 // montarQR gera e serializa um bloco de QR code (GS v 0, fallback por imagem).
@@ -240,9 +245,12 @@ func montarQR(l Linha) ([]byte, error) {
 // alinhamento, quebra e preenchimento) — a lógica original de montarCupom.
 func montarLinhaTexto(buf *bytes.Buffer, l Linha) {
 	larga := l.Fonte == "larga"
+	gigante := l.Fonte == "gigante"
 	limite := WidthNormal
 	if larga {
 		limite = WidthLarge
+	} else if gigante {
+		limite = WidthGiant
 	}
 	texto := l.Texto
 	if l.Linha {
@@ -257,6 +265,8 @@ func montarLinhaTexto(buf *bytes.Buffer, l Linha) {
 		}
 		if larga {
 			buf.Write(largeOn)
+		} else if gigante {
+			buf.Write(giantOn)
 		}
 		if l.Negrito {
 			buf.Write(boldOn)
@@ -267,7 +277,7 @@ func montarLinhaTexto(buf *bytes.Buffer, l Linha) {
 		if l.Negrito {
 			buf.Write(boldOff)
 		}
-		if larga {
+		if larga || gigante {
 			buf.Write(largeOff)
 		}
 	}
@@ -335,18 +345,46 @@ var lineDelay = 30 * time.Millisecond
 // última linha e a guilhotina, sem precisar de linhas em branco no texto
 // (0 = corte rente, modo compacto).
 //
-// É uma var para permitir sobrescrever em testes.
-var enviar = func(dados []byte, cortar bool, feedCorte int) error {
-	// abrirSaida é por plataforma: device usblp (Linux) ou fila RAW (Windows).
-	out, err := abrirSaida()
-	if err != nil {
-		return err
+// escreverDados envia o buffer ao device. Texto vai linha a linha com pausa
+// (lineDelay): o buffer da i9 é pequeno e rajadas grandes de texto causam
+// "imprime um pedaço, para, continua". Já os bitmaps (GS v 0: imagem e QR) são
+// BINÁRIOS — um 0x0A no meio deles NÃO é fim de linha. Quebrar neles (como o
+// código fazia) dormia 30 ms a cada 0x0A casual do bitmap (~1 a cada 256 bytes),
+// entregando os dados muito mais devagar que o cabeçote consome (~170 KB/s a
+// 300 mm/s): a impressora esvaziava o buffer, parava no meio da imagem e deixava
+// uma linha. Bitmaps agora vão inteiros, em blocos grandes e SEM pausa — o
+// write bloqueante do USB já faz o controle de fluxo.
+func escreverDados(out io.Writer, dados []byte) error {
+	for len(dados) > 0 {
+		var texto []byte
+		raster, resto := proximoRaster(dados)
+		texto, dados = dados[:len(dados)-len(raster)-len(resto)], resto
+		if err := escreverTexto(out, texto); err != nil {
+			return err
+		}
+		for len(raster) > 0 {
+			n := len(raster)
+			if n > rasterChunk {
+				n = rasterChunk
+			}
+			if _, err := out.Write(raster[:n]); err != nil {
+				return fmt.Errorf("escrevendo em %s: %w", LP, err)
+			}
+			raster = raster[n:]
+		}
 	}
-	defer out.Close()
-	// Linha a linha (não um write único): o buffer da i9 é pequeno e rajadas
-	// grandes causam "imprime um pedaço, para, continua". Cada linha é um
-	// write pequeno; o sleep suaviza o envio para a velocidade da impressora.
-	chunks := bytes.Split(dados, []byte{'\n'})
+	return nil
+}
+
+// rasterChunk é o tamanho de cada write de um bitmap (sem pausas entre eles).
+const rasterChunk = 4096
+
+// escreverTexto envia texto/comandos linha a linha com lineDelay entre elas.
+func escreverTexto(out io.Writer, texto []byte) error {
+	if len(texto) == 0 {
+		return nil
+	}
+	chunks := bytes.Split(texto, []byte{'\n'})
 	for i, chunk := range chunks {
 		if _, err := out.Write(chunk); err != nil {
 			return fmt.Errorf("escrevendo em %s: %w", LP, err)
@@ -357,6 +395,45 @@ var enviar = func(dados []byte, cortar bool, feedCorte int) error {
 			}
 			time.Sleep(lineDelay)
 		}
+	}
+	return nil
+}
+
+// proximoRaster localiza o primeiro comando GS v 0 de dados e devolve o comando
+// inteiro (cabeçalho de 8 bytes + xBytes*altura) e o que vem depois dele. Se não
+// houver (ou o comando estiver truncado), devolve raster vazio e resto vazio: tudo
+// que sobrou é tratado como texto. O texto anterior ao raster é dados[:len-...].
+func proximoRaster(dados []byte) (raster, resto []byte) {
+	cab := []byte{0x1d, 0x76, 0x30}
+	i := bytes.Index(dados, cab)
+	for i >= 0 {
+		if i+8 <= len(dados) {
+			xBytes := int(dados[i+4]) | int(dados[i+5])<<8
+			altura := int(dados[i+6]) | int(dados[i+7])<<8
+			fim := i + 8 + xBytes*altura
+			if m := dados[i+3]; (m <= 3 || (m >= 48 && m <= 51)) && fim <= len(dados) {
+				return dados[i:fim], dados[fim:]
+			}
+		}
+		j := bytes.Index(dados[i+1:], cab)
+		if j < 0 {
+			break
+		}
+		i += 1 + j
+	}
+	return nil, nil
+}
+
+// É uma var para permitir sobrescrever em testes.
+var enviar = func(dados []byte, cortar bool, feedCorte int) error {
+	// abrirSaida é por plataforma: device usblp (Linux) ou fila RAW (Windows).
+	out, err := abrirSaida()
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if err := escreverDados(out, dados); err != nil {
+		return err
 	}
 	if cortar {
 		// GS V 66 0 = "print and feed to cutting position and cut": a i9

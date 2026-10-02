@@ -236,3 +236,72 @@ func TestEnviarSemCorte(t *testing.T) {
 		t.Fatal("enviar com cortar=false não deveria escrever o corte")
 	}
 }
+
+// gravador registra cada write para checarmos como o buffer foi fatiado.
+type gravador struct{ writes [][]byte }
+
+func (g *gravador) Write(p []byte) (int, error) {
+	g.writes = append(g.writes, append([]byte(nil), p...))
+	return len(p), nil
+}
+
+// bitmap cheio de 0x0A: se o envio quebrasse neles (como antes), cada um dormiria lineDelay.
+func TestEscreverDadosNaoQuebraBitmapEm0x0A(t *testing.T) {
+	const xBytes, altura = 72, 200
+	bitmap := bytes.Repeat([]byte{0x0a}, xBytes*altura)
+	dados := []byte("antes\n")
+	dados = append(dados, 0x1d, 0x76, 0x30, 0x00, xBytes, 0x00, altura, 0x00)
+	dados = append(dados, bitmap...)
+	dados = append(dados, []byte("depois\n")...)
+
+	orig := lineDelay
+	lineDelay = 50 * time.Millisecond
+	defer func() { lineDelay = orig }()
+
+	g := &gravador{}
+	ini := time.Now()
+	if err := escreverDados(g, dados); err != nil {
+		t.Fatal(err)
+	}
+	// 14400 bytes 0x0A × 50 ms seriam 12 min; só as 2 linhas de texto pausam
+	if d := time.Since(ini); d > 500*time.Millisecond {
+		t.Fatalf("o bitmap foi enviado com pausas por 0x0A: levou %v", d)
+	}
+	var tudo []byte
+	for _, w := range g.writes {
+		tudo = append(tudo, w...)
+	}
+	if !bytes.Equal(tudo, dados) {
+		t.Fatal("os bytes enviados devem ser idênticos aos de entrada")
+	}
+	for _, w := range g.writes {
+		if len(w) > rasterChunk && !bytes.HasPrefix(w, []byte("antes")) {
+			t.Fatalf("write de %d bytes excede o bloco de %d", len(w), rasterChunk)
+		}
+	}
+}
+
+func TestProximoRasterIgnoraCabecalhoInvalido(t *testing.T) {
+	// 1d 76 30 sem comando completo (truncado): tudo é tratado como texto
+	if r, _ := proximoRaster([]byte{0x1d, 0x76, 0x30, 0x00, 0x48, 0x00, 0x10, 0x00, 1, 2, 3}); r != nil {
+		t.Fatal("comando truncado não deveria ser reconhecido como raster")
+	}
+	if r, _ := proximoRaster([]byte("só texto\n")); r != nil {
+		t.Fatal("texto puro não tem raster")
+	}
+}
+
+func TestFonteGiganteUsaGSExclamacao73ECentraEm6Colunas(t *testing.T) {
+	out, err := montarCupom("", []Linha{{Texto: "PONG!", Alinhamento: "centro", Fonte: "gigante"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(out, []byte{0x1d, 0x21, 0x73}) || !bytes.Contains(out, []byte("PONG!\n")) {
+		t.Fatalf("fonte gigante deveria usar GS ! 0x73 e manter 'PONG!' em uma linha: %q", out)
+	}
+	// 7 caracteres passam das 6 colunas e quebram em duas linhas
+	out, _ = montarCupom("", []Linha{{Texto: "ABCDEFG", Fonte: "gigante"}})
+	if !bytes.Contains(out, []byte("ABCDEF")) || !bytes.Contains(out, []byte("G\n")) {
+		t.Fatalf("gigante deveria quebrar a cada 6 colunas: %q", out)
+	}
+}
