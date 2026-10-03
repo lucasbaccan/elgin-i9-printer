@@ -9,6 +9,9 @@ ExecStart=/usr/local/bin/elgin-print serve
 # para forçar um device/fila específica, descomente:
 # Environment=ELGIN_LP=/dev/usb/lp0
 Environment=ELGIN_API_PORT=8000
+# Imagens compartilhadas (validade de 7 dias) ficam em $ELGIN_DATA_DIR/imagens
+Environment=ELGIN_DATA_DIR=/var/lib/elgin-print
+StateDirectory=elgin-print
 Restart=always
 RestartSec=3
 

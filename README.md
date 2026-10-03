@@ -101,6 +101,7 @@ O corte é automático (`GS V 66 0`), enviado em write separado com delay para n
 | `GET /qr?text=…&tamanho=` | o QR como PNG, exatamente como sai no papel | não |
 | `GET /qr/info?text=…` | lado do QR em módulos (para escolher o tamanho) | não |
 | `POST /imagem/preview` | PNG preto e branco de uma imagem, com os mesmos ajustes da impressão | não |
+| `POST /imagens` · `GET /imagens/{id}` | imagens do link de compartilhar: salvas por **7 dias** (id = hash do conteúdo) | não |
 | `GET /exemplos` · `GET /exemplos/{id}` | lista e cupom dos exemplos prontos (corpo do `/print`) | não |
 | `POST /exemplos/{id}/print` | imprime um exemplo | **sim** |
 | `GET /test-grayscale` · `POST /test-print` | degradê de 16 tons (PNG) / imprime o degradê | não / **sim** |
@@ -227,6 +228,26 @@ Imagens são referenciadas no JSON como `"@arquivo.png"` (arquivo em `webui/exem
 16 tons gerado em código) e o servidor as converte para base64. **Para criar um exemplo novo, adicione uma entrada ao
 `exemplos.json`**: ele aparece no menu e ganha endpoint automaticamente (e o teste cobra que seja citado no `llms.txt`).
 
+## Imagens compartilhadas (7 dias)
+
+Para o link de **Compartilhar** funcionar com imagens (que são grandes demais para caber numa URL), a Web UI as envia ao
+servidor com `POST /imagens`:
+
+- A imagem é salva em disco e recebe um **id = hash SHA-256 do conteúdo**: duas imagens iguais geram o mesmo id e ocupam
+  **um arquivo só**. O link leva só esse id (cerca de 200 caracteres, em vez de milhares).
+- **Validade de 7 dias** a partir do último compartilhamento. Clicar em **Compartilhar** de novo (enviar a mesma imagem)
+  **renova o prazo**. A Web UI avisa a data limite depois de compartilhar.
+- Uma **limpeza roda ao subir o servidor e a cada 24 h**, apagando o que venceu; um arquivo vencido também deixa de ser
+  servido antes da limpeza. Depois do prazo o link continua abrindo, mas **sem as imagens** (o bloco fica vazio para
+  escolher a imagem de novo).
+- `GET /imagens/{id}` devolve a imagem (`404` se nunca existiu ou expirou) e **não** renova o prazo.
+- Limites: PNG, JPEG ou GIF de até **10 MB** por imagem e **512 MB** no total (`ELGIN_IMG_MAX_MB`); cheio devolve `507`.
+- **Onde fica**: `<ELGIN_DATA_DIR>/imagens` (padrão `./data/imagens`; já está no `.gitignore`). Em Docker, monte um volume
+  em `/data`; no systemd o serviço usa `/var/lib/elgin-print`.
+
+> ⚠️ Não há autenticação: qualquer cliente que alcance o servidor pode enviar e baixar imagens por id. Use só em rede
+> confiável (ou atrás de um proxy com senha) e não compartilhe imagens sensíveis.
+
 ## Web UI
 
 Abra `http://<host>:8000/` no navegador. Oferece:
@@ -239,10 +260,10 @@ Abra `http://<host>:8000/` no navegador. Oferece:
 - Checkbox **"Ver imagens como serão impressas"**: troca as imagens do preview pelo preto e branco real.
 - Controle **Rente | Com respiro** (corte), botões **Imprimir**, **Limpar**, **Feed**, **Corte** e **Ping**.
 - Menu **Exemplos** (carregado da API) e **Construtor de chamadas da API** (mostra o JSON e o `curl` prontos).
-- Botão **🔗 Compartilhar**: copia um link `…/#c=…` com o cupom inteiro. O estado vira JSON compacto, é comprimido
-  (deflate) e codificado em base64url **no próprio fragmento da URL — nada vai ao servidor**. Abrir o link só reconstrói
-  o editor (**nunca imprime**) e valida tudo ao carregar. Acima de 2.000 caracteres (normalmente por causa de imagens)
-  aparece um aviso com a opção "Copiar sem imagens".
+- Botão **🔗 Compartilhar**: copia um link `…/#c=…` com o cupom inteiro (JSON compacto, comprimido com deflate e em
+  base64url, **no próprio fragmento da URL**). Abrir o link só reconstrói o editor (**nunca imprime**) e valida tudo ao
+  carregar. As **imagens não vão dentro do link**: são salvas no servidor por **7 dias** e o link leva só o hash do
+  arquivo (veja [Imagens compartilhadas](#imagens-compartilhadas-7-dias)).
 
 Exemplo impresso na Elgin i9 (logo 1-bit dithered + QR code lido de primeira):
 
@@ -254,6 +275,8 @@ Exemplo impresso na Elgin i9 (logo 1-bit dithered + QR code lido de primeira):
 |---|---|---|
 | `ELGIN_LP` | impressora em uso: device no Linux (`/dev/usb/lpN`) ou nome da fila no Windows | detecção automática (veja abaixo) |
 | `ELGIN_API_PORT` | porta da API e da Web UI | `8000` |
+| `ELGIN_DATA_DIR` | pasta de dados (imagens compartilhadas ficam em `<pasta>/imagens`) | `./data` |
+| `ELGIN_IMG_MAX_MB` | limite total das imagens compartilhadas, em MB | `512` |
 | `ELGIN_LINE_DELAY_MS` | pausa entre linhas de **texto** ao enviar (bitmaps de imagem/QR vão sem pausa) | `30` |
 
 ## Desenvolvimento
@@ -283,6 +306,7 @@ Para publicar, compile o binário (`deploy/build.sh`) e instale como serviço, o
 main.go            CLI (print, serve, feed, cut) e flags
 server.go          API REST, Web UI, /llms.txt, /openapi.json, /docs/
 exemplos.go        endpoints /exemplos (lê webui/exemplos/exemplos.json)
+imagens.go         imagens compartilhadas: salvar em disco (hash), servir, validade de 7 dias e limpeza
 printer.go         montagem do cupom ESC/POS, code page PC860, envio ao device
 graphics.go        imagem (pipeline + dither Atkinson) e QR code → bitmap GS v 0
 device_unix.go     detecção/acesso ao device (Linux/macOS) · device_windows.go: fila RAW (winspool)

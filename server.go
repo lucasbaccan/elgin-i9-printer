@@ -48,6 +48,15 @@ func cmdServe() {
 	log.Printf("[STARTUP] Device: %s", LP)
 	log.Printf("[STARTUP] Device presente: %v", devicePresent())
 
+	if d := os.Getenv("ELGIN_DATA_DIR"); d != "" {
+		dataDir = d
+	}
+	if mb, err := strconv.Atoi(os.Getenv("ELGIN_IMG_MAX_MB")); err == nil && mb > 0 {
+		imgMaxTotal = int64(mb) << 20
+	}
+	log.Printf("[STARTUP] Imagens compartilhadas: %s (validade %d dias, limite %d MB)", imgDir(), int(imgTTL/(24*time.Hour)), imgMaxTotal>>20)
+	iniciarLimpezaImagens()
+
 	go watchdog()
 
 	mux := http.NewServeMux()
@@ -56,6 +65,8 @@ func cmdServe() {
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/docs/", http.StatusMovedPermanently)
 	})
+	mux.HandleFunc("/imagens", logMiddleware(handleImagens))
+	mux.HandleFunc("/imagens/", logMiddleware(handleImagens))
 	mux.HandleFunc("/exemplos", logMiddleware(handleExemplos))
 	mux.HandleFunc("/exemplos/", logMiddleware(handleExemplos))
 	mux.HandleFunc("/llms.txt", logMiddleware(handleLlmsTxt))
@@ -345,6 +356,8 @@ func apiDocs() map[string]any {
 			"GET /llms.txt":             "guia completo em Markdown para agentes de IA",
 			"GET /openapi.json":         "especificação OpenAPI 3.1",
 			"GET /docs/":                "Swagger UI: documentação interativa de todos os endpoints",
+			"POST /imagens":             "salva uma imagem por 7 dias (id = hash do conteúdo; reenviar renova o prazo)",
+			"GET /imagens/{id}":         "devolve a imagem salva (404 se expirou)",
 			"GET /exemplos":             "lista os cupons de exemplo prontos",
 			"GET /exemplos/{id}":        "o cupom do exemplo (corpo pronto para o POST /print, não imprime)",
 			"POST /exemplos/{id}/print": "imprime o exemplo",
