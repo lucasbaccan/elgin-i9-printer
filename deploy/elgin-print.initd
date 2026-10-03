@@ -15,6 +15,13 @@ pidfile="/run/${name}.pid"
 output_log="/var/log/${name}.log"
 error_log="/var/log/${name}.log"
 
+# O openrc-run lê /etc/conf.d/elgin-print, mas as variáveis ficam só no shell do
+# script: sem `export` o binário não as vê (getenv vazio -> valem os padrões do
+# código e as imagens compartilhadas iriam para ./data, relativo ao cwd — que no
+# OpenRC é /). Pasta de dados com o mesmo padrão do systemd (StateDirectory).
+: "${ELGIN_DATA_DIR:=/var/lib/elgin-print}"
+export ELGIN_LP ELGIN_API_PORT ELGIN_DATA_DIR ELGIN_IMG_MAX_MB ELGIN_LINE_DELAY_MS
+
 depend() {
     need localmount
     after bootmisc
