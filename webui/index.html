@@ -207,6 +207,7 @@
   .pb-chk { margin-top: 8px; }
   .share-msg { margin: 0 0 12px; padding: 8px 12px; font-size: 12px; border-radius: 8px; background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .share-msg[hidden] { display: none; }
+  .share-msg.info { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; }
   .share-msg button { font-size: 12px; padding: 4px 10px; }
   .aj-box { margin-top: 4px; }
   .aj-box summary { cursor: pointer; font-size: 12px; color: var(--muted); user-select: none; }
@@ -524,7 +525,7 @@
       <li>No bloco de lista, <b>Enter</b> ou <b>Tab</b> cria o próximo item com foco; a lista nunca fica vazia.</li>
       <li>O exemplo <b>Símbolos</b> (menu Exemplos) imprime todos os caracteres da code page (CP860) — veja quais a impressora aceita.</li>
       <li>Para adicionar uma imagem, use o botão <b>🖼️ Imagem</b> (escolhe arquivo) ou <b>Ctrl+V</b> com uma imagem na área de transferência.</li>
-      <li>O botão <b>🔗 Compartilhar</b> copia um link que reconstrói o cupom inteiro (tudo vai dentro do link, nada é enviado a servidor). Abrir um link só carrega o editor — <b>não imprime</b>. Acima de 2.000 caracteres (normalmente por causa de imagens) aparece um aviso.</li>
+      <li>O botão <b>🔗 Compartilhar</b> copia um link que reconstrói o cupom inteiro (tudo vai dentro do link, nada é enviado a servidor). Abrir um link só carrega o editor — <b>não imprime</b>. As <b>imagens</b> ficam salvas no servidor por <b>7 dias</b> (o link leva só o hash do arquivo): depois disso o link continua abrindo, mas sem as imagens. Compartilhar de novo renova o prazo.</li>
       <li>Imagem e QR são convertidos para 1-bit (dither) e ajustados à largura do papel (576 dots); QR maior que o papel reduz o módulo automaticamente.</li>
       <li>A linha pontilhada com <i class="fa fa-scissors"></i> no preview mostra <b>onde a guilhotina corta</b>.</li>
       <li>Emojis e a faixa baixa (☺♥♦♣♠) <b>não existem</b> na fonte da i9 — viram <code>?</code>.</li>
@@ -1512,12 +1513,13 @@ function b64urlParaBytes(t) {
 }
 
 // serializa o editor (state) no formato compacto; semImagens omite os blocos de imagem
-function estadoParaCompacto(semImagens) {
+// ids: Map(bloco de imagem -> id no servidor). Imagem sem id (ou semImagens) fica de fora do link.
+function estadoParaCompacto(semImagens, ids) {
   const l = [];
   for (const b of state.linhas) {
     if (b.tipo === 'imagem') {
-      if (semImagens || !b.imagem) continue;
-      const o = { k: 'I', d: b.imagem.replace(/^data:/, '') };
+      if (semImagens || !b.imagem || !ids || !ids.has(b)) continue;
+      const o = { k: 'I', r: ids.get(b) }; // só o hash do arquivo: a imagem fica no servidor por 7 dias
       if (b.alinhamento && b.alinhamento !== 'centro') o.a = b.alinhamento;
       Object.assign(o, paramsImagem(b)); // só os ajustes diferentes do padrão
       l.push(o);
@@ -1550,8 +1552,8 @@ function estadoParaCompacto(semImagens) {
   return raiz;
 }
 
-async function gerarLink(semImagens) {
-  const bytes = new TextEncoder().encode(JSON.stringify(estadoParaCompacto(semImagens)));
+async function gerarLink(semImagens, ids) {
+  const bytes = new TextEncoder().encode(JSON.stringify(estadoParaCompacto(semImagens, ids)));
   let payload;
   if (typeof CompressionStream === 'function') {
     const cs = new CompressionStream('deflate-raw');
@@ -1569,24 +1571,59 @@ async function copiarLink(link, msgOk) {
   catch (e) { copiarTexto(link, msgOk); } // http na rede local: clipboard API indisponível
 }
 
+const fmtData = d => d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+// salva cada imagem do cupom no servidor (POST /imagens). O id é o hash do conteúdo: imagens
+// iguais dão o mesmo id, e reenviar renova a validade de 7 dias. Devolve os ids e a data
+// de expiração mais próxima.
+async function enviarImagens() {
+  const ids = new Map();
+  let expira = null;
+  for (const b of state.linhas) {
+    if (b.tipo !== 'imagem' || !b.imagem) continue;
+    const r = await fetch('/imagens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imagem: b.imagem }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+    ids.set(b, j.id);
+    const e = new Date(j.expira_em);
+    if (!expira || e < expira) expira = e;
+  }
+  return { ids, expira };
+}
+
 async function compartilhar(semImagens) {
   const aviso = document.getElementById('shareMsg');
   aviso.hidden = true;
+  aviso.className = 'share-msg';
   const temImagem = state.linhas.some(b => b.tipo === 'imagem' && b.imagem);
-  const link = await gerarLink(!!semImagens);
+  let envio = { ids: new Map(), expira: null };
+  if (temImagem && !semImagens) {
+    try { envio = await enviarImagens(); }
+    catch (e) {
+      aviso.innerHTML = '<span>⚠️ Não foi possível salvar a imagem no servidor (' + lineEscape(e.message) +
+        '). Para o link funcionar com imagens, elas são guardadas lá por 7 dias.</span>' +
+        '<button onclick="compartilhar(true)">Copiar link sem imagens</button>';
+      aviso.hidden = false;
+      return;
+    }
+  }
+  const link = await gerarLink(!!semImagens, envio.ids);
   if (link.length > LIMITE_LINK_MAX) {
-    toast('Link grande demais (' + link.length.toLocaleString('pt-BR') + ' caracteres): remova ou reduza as imagens', true);
+    toast('Link grande demais (' + link.length.toLocaleString('pt-BR') + ' caracteres)', true);
     return;
   }
   await copiarLink(link, 'Link copiado (' + link.length.toLocaleString('pt-BR') + ' caracteres)');
-  if (link.length > LIMITE_LINK_AVISO) {
-    const sem = temImagem && !semImagens ? await gerarLink(true) : null;
-    aviso.innerHTML = '<span>⚠️ O link tem <b>' + link.length.toLocaleString('pt-BR') + '</b> caracteres (acima de ' +
-      LIMITE_LINK_AVISO.toLocaleString('pt-BR') + '): apps de mensagem e e-mail podem cortá-lo ou recusá-lo. ' +
-      (sem ? 'As imagens ocupam ' + (link.length - sem.length).toLocaleString('pt-BR') + ' caracteres.' : '') + '</span>' +
-      (sem ? '<button onclick="compartilhar(true)">Copiar sem imagens (' + sem.length.toLocaleString('pt-BR') + ')</button>' : '');
-    aviso.hidden = false;
+  let html = '';
+  if (envio.expira) {
+    aviso.classList.add('info');
+    html += '<span>🕒 Imagens compartilhadas ficam salvas no servidor por <b>7 dias</b>: este link só funciona até <b>' +
+      fmtData(envio.expira) + '</b>. Clique em <b>Compartilhar</b> de novo para renovar o prazo.</span>';
   }
+  if (link.length > LIMITE_LINK_AVISO) {
+    html += '<span>⚠️ O link tem <b>' + link.length.toLocaleString('pt-BR') + '</b> caracteres (acima de ' +
+      LIMITE_LINK_AVISO.toLocaleString('pt-BR') + '): apps de mensagem e e-mail podem cortá-lo ou recusá-lo.</span>';
+  }
+  if (html) { aviso.innerHTML = html; aviso.hidden = false; }
 }
 
 // ---- carregar: valida TUDO (o link vem de fora) ----
@@ -1600,9 +1637,11 @@ function compactoParaBlocos(raiz) {
     if (!b || typeof b !== 'object') continue;
     const alin = ALIN_OK.includes(b.a) ? b.a : undefined;
     if (b.k === 'I') {
-      const img = typeof b.d === 'string' && MIME_IMG.test(b.d) ? 'data:' + b.d : '';
-      if (!img) continue;
+      const img = typeof b.d === 'string' && MIME_IMG.test(b.d) ? 'data:' + b.d : ''; // links antigos levavam a imagem inline
+      const ref = typeof b.r === 'string' && /^[0-9a-f]{32}$/.test(b.r) ? b.r : '';  // hash no servidor
+      if (!img && !ref) continue;
       const l = { tipo: 'imagem', imagem: img };
+      if (!img) l.ref = ref; // buscada em GET /imagens/{id} depois de montar o editor
       if (alin) l.alinhamento = alin;
       if (b.largura) l.largura = inteiro(b.largura, 0, 576);
       for (const k of ['brilho', 'contraste', 'meios_tons']) if (b[k]) l[k] = inteiro(b[k], -100, 100);
@@ -1655,6 +1694,32 @@ async function lerPayload(p) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+const blobParaDataUrl = blob => new Promise((ok, err) => {
+  const fr = new FileReader();
+  fr.onload = () => ok(fr.result);
+  fr.onerror = err;
+  fr.readAsDataURL(blob);
+});
+
+// busca no servidor as imagens referenciadas pelo link; as vencidas ficam como "nenhuma imagem"
+async function carregarImagensDoLink() {
+  const pend = state.linhas.filter(b => b.ref);
+  if (!pend.length) return;
+  let falhas = 0;
+  await Promise.all(pend.map(async b => {
+    try {
+      const r = await fetch('/imagens/' + b.ref);
+      if (!r.ok) throw new Error(r.status);
+      const blob = await r.blob();
+      if (!/^image\/(png|jpeg|gif)$/.test(blob.type)) throw new Error('tipo');
+      b.imagem = await blobParaDataUrl(blob);
+    } catch (e) { falhas++; }
+    delete b.ref;
+  }));
+  render();
+  if (falhas) toast(falhas + ' imagem(ns) do link expirou/expiraram (links com imagem valem 7 dias): escolha a imagem de novo', true);
+}
+
 async function carregarDoLink() {
   const m = /^#c=([A-Za-z0-9_-]+)$/.exec(location.hash);
   if (!m) return;
@@ -1668,6 +1733,7 @@ async function carregarDoLink() {
     sincCompacto();
     render();
     toast('Cupom carregado do link (nada foi impresso)');
+    await carregarImagensDoLink();
   } catch (e) {
     toast('Link inválido ou corrompido', true);
   }
