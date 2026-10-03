@@ -243,7 +243,8 @@ servidor com `POST /imagens`:
 - `GET /imagens/{id}` devolve a imagem (`404` se nunca existiu ou expirou) e **não** renova o prazo.
 - Limites: PNG, JPEG ou GIF de até **10 MB** por imagem e **512 MB** no total (`ELGIN_IMG_MAX_MB`); cheio devolve `507`.
 - **Onde fica**: `<ELGIN_DATA_DIR>/imagens` (padrão `./data/imagens`; já está no `.gitignore`). Em Docker, monte um volume
-  em `/data`; no systemd o serviço usa `/var/lib/elgin-print`.
+  em `/data`; no systemd o serviço usa `/var/lib/elgin-print` (o `initd` do OpenRC também, e ele exporta as variáveis do
+  `/etc/conf.d/elgin-print` — sem `export` o binário não as enxerga).
 
 > ⚠️ Não há autenticação: qualquer cliente que alcance o servidor pode enviar e baixar imagens por id. Use só em rede
 > confiável (ou atrás de um proxy com senha) e não compartilhe imagens sensíveis.
