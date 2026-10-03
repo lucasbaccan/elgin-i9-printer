@@ -14,5 +14,8 @@ services:
     environment:
       - ELGIN_LP=/dev/usb/lp0
       - ELGIN_API_PORT=8000
+      - ELGIN_DATA_DIR=/data
+    volumes:
+      - ./data:/data   # imagens compartilhadas (validade de 7 dias)
     ports:
       - "8000:8000"

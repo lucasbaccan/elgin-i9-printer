@@ -3,6 +3,7 @@
 # Config opcional em /etc/conf.d/elgin-print:
 #   ELGIN_LP=/dev/usb/lp0
 #   ELGIN_API_PORT=8000
+#   ELGIN_DATA_DIR=/var/lib/elgin-print   (imagens compartilhadas, validade de 7 dias)
 
 name="elgin-print"
 description="Elgin I9 thermal printer service (Go binary)"
