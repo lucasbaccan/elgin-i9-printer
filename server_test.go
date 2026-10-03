@@ -287,7 +287,7 @@ func TestLlmsTxtEOpenAPI(t *testing.T) {
 			}
 			// todo endpoint registrado no servidor deve estar documentado
 			for _, p := range []string{"/health", "/print", "/feed", "/cut", "/ping", "/qr", "/qr/info",
-				"/imagem/preview", "/test-grayscale", "/test-print", "/llms.txt", "/openapi.json", "/docs/", "/exemplos", "/exemplos/{id}", "/exemplos/{id}/print"} {
+				"/imagem/preview", "/test-grayscale", "/test-print", "/llms.txt", "/openapi.json", "/docs/", "/exemplos", "/exemplos/{id}", "/exemplos/{id}/print", "/imagens", "/imagens/{id}"} {
 				if _, ok := doc.Paths[p]; !ok {
 					t.Errorf("endpoint %s não está no openapi.json", p)
 				}

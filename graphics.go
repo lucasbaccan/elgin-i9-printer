@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
@@ -38,13 +37,9 @@ const (
 // decodeImagem converte base64 (com ou sem o prefixo data:image/...;base64,)
 // num image.Image decodificado (PNG, JPEG ou GIF — primeiro frame).
 func decodeImagem(s string) (image.Image, error) {
-	s = strings.TrimSpace(s)
-	if i := strings.Index(s, "base64,"); i >= 0 {
-		s = s[i+len("base64,"):]
-	}
-	raw, err := base64.StdEncoding.DecodeString(s)
+	raw, err := base64Imagem(s)
 	if err != nil {
-		return nil, fmt.Errorf("imagem: base64 inválido: %w", err)
+		return nil, err
 	}
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {

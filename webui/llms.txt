@@ -47,6 +47,8 @@ Resposta de sucesso: `{"ok": true, "linhas": 5}`. O cupom é cortado automaticam
 | `POST /imagem/preview` | Devolve um PNG preto e branco: como uma imagem sairá impressa (mesmos campos do bloco imagem) | não |
 | `GET /test-grayscale` | PNG de teste com degradê de 16 tons | não |
 | `POST /test-print` | Imprime o degradê de teste | sim |
+| `POST /imagens` | Salva uma imagem por **7 dias** e devolve o `id` (hash SHA-256 do conteúdo). Imagem igual = mesmo id, e reenviar **renova o prazo** | não |
+| `GET /imagens/{id}` | Devolve a imagem salva; `404` se não existe ou expirou | não |
 | `GET /exemplos` | Lista os cupons de exemplo prontos (id, grupo, nome, descrição) | não |
 | `GET /exemplos/{id}` | O cupom do exemplo, **pronto para enviar a `POST /print`** (imagens já em base64) | não |
 | `POST /exemplos/{id}/print` | Imprime o exemplo (atalho de `GET /exemplos/{id}` + `POST /print`) | **sim** |
@@ -163,6 +165,18 @@ Exemplo (Wi-Fi, alinhado à esquerda, módulo 5):
 ```json
 {"tipo": "qr", "qr": "WIFI:T:WPA;S:CafeExemplo;P:senha1234;H:false;;", "qr_tamanho": 5, "alinhamento": "esquerda"}
 ```
+
+## Imagens compartilhadas (7 dias)
+
+A Web UI usa `POST /imagens` para que o link de **Compartilhar** funcione com imagens: a imagem é salva em disco no servidor, identificada pelo **hash do conteúdo** (imagens iguais têm o mesmo id e ocupam um arquivo só), e o link leva só esse id. A imagem **vale 7 dias**: compartilhar de novo (enviar a mesma imagem) renova o prazo; uma limpeza a cada 24 h apaga o que venceu. Depois disso o link continua abrindo, mas sem as imagens.
+
+```bash
+curl -X POST {{BASE_URL}}/imagens -H 'Content-Type: application/json' -d '{"imagem": "<BASE64_PNG_JPEG_GIF>"}'
+# -> {"ok":true,"id":"7dbc78ff…","url":"/imagens/7dbc78ff…","renovada":false,"validade_dias":7,"expira_em":"2026-10-09T00:25:40Z"}
+curl {{BASE_URL}}/imagens/7dbc78ff5d29ee7c9094b0fdec684f37 -o imagem.png
+```
+
+Limites: PNG, JPEG ou GIF de até 10 MB por imagem e 512 MB no total (`507` se cheio). Não use isto como armazenamento permanente.
 
 ## Exemplos prontos
 

@@ -895,6 +895,187 @@
           }
         }
       }
+    },
+    "/imagens": {
+      "post": {
+        "tags": [
+          "Imagens compartilhadas"
+        ],
+        "summary": "Salva (ou renova) uma imagem compartilhada",
+        "operationId": "imagemSalvar",
+        "x-imprime": false,
+        "description": "Salva a imagem em disco e devolve o `id` (hash do conteúdo). Se a mesma imagem já existe, não duplica: apenas **renova a validade para 7 dias** (`renovada: true`). Aceita PNG, JPEG ou GIF de até 10 MB. O armazenamento total é limitado (padrão 512 MB, `ELGIN_IMG_MAX_MB`); cheio devolve `507`. Não há autenticação: qualquer cliente que alcance o servidor pode enviar imagens.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "imagem"
+                ],
+                "properties": {
+                  "imagem": {
+                    "type": "string",
+                    "description": "Base64 de PNG, JPEG ou GIF, com ou sem o prefixo data:image/...;base64,"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imagem salva ou renovada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImagemSalva"
+                },
+                "examples": {
+                  "nova": {
+                    "value": {
+                      "ok": true,
+                      "id": "7dbc78ff5d29ee7c9094b0fdec684f37",
+                      "url": "/imagens/7dbc78ff5d29ee7c9094b0fdec684f37",
+                      "renovada": false,
+                      "validade_dias": 7,
+                      "expira_em": "2026-10-09T00:25:40Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Imagem maior que 10 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "Armazenamento de imagens cheio",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/imagens/{id}": {
+      "get": {
+        "tags": [
+          "Imagens compartilhadas"
+        ],
+        "summary": "Devolve uma imagem compartilhada",
+        "operationId": "imagemObter",
+        "x-imprime": false,
+        "description": "Devolve o arquivo da imagem (o `Content-Type` é o do arquivo e o cabeçalho `X-Expira-Em` traz a data de expiração). **404** se o id nunca existiu **ou se a imagem expirou** (7 dias sem ser compartilhada de novo). Este endpoint não renova o prazo: só o `POST /imagens` renova.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "description": "Id devolvido pelo POST /imagens (32 hexadecimais)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A imagem",
+            "headers": {
+              "X-Expira-Em": {
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "description": "Quando a imagem expira"
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1156,6 +1337,33 @@
             "description": "URL para imprimir (POST)"
           }
         }
+      },
+      "ImagemSalva": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "description": "SHA-256 do conteúdo (128 bits, 32 hexadecimais)"
+          },
+          "url": {
+            "type": "string"
+          },
+          "renovada": {
+            "type": "boolean",
+            "description": "true se a imagem já existia e só teve o prazo renovado"
+          },
+          "validade_dias": {
+            "type": "integer",
+            "example": 7
+          },
+          "expira_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   },
@@ -1179,6 +1387,10 @@
     {
       "name": "Exemplos",
       "description": "Cupons de exemplo prontos (os mesmos do menu *Exemplos* da interface web): cupons, QR codes de todos os tipos, imagens e tabelas de símbolos. Cada exemplo pode ser consultado (não imprime) ou impresso."
+    },
+    {
+      "name": "Imagens compartilhadas",
+      "description": "Imagens guardadas no servidor por **7 dias** para os links de compartilhar da interface web funcionarem com imagens. O id é o **hash SHA-256 do conteúdo**: imagens iguais geram o mesmo id e ocupam um arquivo só. Enviar a mesma imagem de novo **renova o prazo** para mais 7 dias. Uma limpeza roda a cada 24 h apagando o que venceu."
     }
   ]
 }
